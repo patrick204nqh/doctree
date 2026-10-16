@@ -61,3 +61,11 @@ export function menuItem(label, value, data) {
   if (value) btn.append(textSpan('m-value', value));
   return btn;
 }
+
+/** Show a short confirmation on a button, then put its label back. */
+export function flash(btn, text = 'Copied', ms = 1200) {
+  btn.dataset.label ??= btn.textContent;
+  btn.textContent = text;
+  clearTimeout(btn.flashTimer);
+  btn.flashTimer = setTimeout(() => { btn.textContent = btn.dataset.label; }, ms);
+}

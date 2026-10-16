@@ -3,33 +3,33 @@
  * Pick, remember and switch folders (handles saved in IndexedDB), and copy a file's path.
  */
 import {
-  state, bodyEl, fileNameEl, sidebar, treeEl, copyGroup, resizeHandle, treeToggleBtn, quickBtn, MAC,
+  state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, copyContentBtn, sidebar, treeEl, copyGroup, resizeHandle,
+  treeToggleBtn, quickBtn, MAC,
 } from './state.js';
-import { textSpan, menuItem, setupMenu } from './dom.js';
+import { textSpan, menuItem, setupMenu, flash } from './dom.js';
 import { buildTree, findIndex, hashToPath, parseBase } from './core.js';
 import { renderCrumbs } from './crumbs.js';
 import { renderTree, startRescans } from './tree.js';
-import { openPath } from './reader.js';
+import { openPath, currentText } from './reader.js';
 import { forgetRecent } from './palette.js';
 
 const FOLDERS_MAX = 8;
 const openFolderBtn = document.getElementById('open-folder-btn');
 const foldersBtn = document.getElementById('folders-btn');
 const foldersMenu = document.getElementById('folders-menu');
-const copyPathBtn = document.getElementById('copy-path-btn');
 const copyMenuBtn = document.getElementById('copy-menu-btn');
 const copyMenu = document.getElementById('copy-menu');
 
 setupMenu(foldersMenu, foldersBtn, fillFoldersMenu);
 setupMenu(copyMenu, copyMenuBtn, fillCopyMenu);
 
-/* ── Copy path: absolute by default, relative from the menu ─────────────── */
-copyPathBtn.addEventListener('click', () => copyPath('absolute'));
+/* ── Copy: the file's text from the button, its path from the menu ──────── */
+copyContentBtn.addEventListener('click', () => copy('content'));
 copyMenu.addEventListener('click', (e) => {
   const item = e.target.closest('[data-copy]');
   if (!item) return;
   copyMenu.hidePopover();
-  copyPath(item.dataset.copy);
+  copy(item.dataset.copy);
 });
 
 function relPath() {
@@ -40,9 +40,9 @@ function absPath() {
   return state.currentFolder?.base ? state.currentFolder.base + '/' + relPath() : '';
 }
 
-async function copyPath(kind) {
-  const text = kind === 'absolute' ? absPath() : relPath();
-  if (!text) { // the folder's location on disk is not known yet
+async function copy(kind) {
+  const text = kind === 'content' ? await currentText() : kind === 'absolute' ? absPath() : relPath();
+  if (!text && kind !== 'content') { // the folder's location on disk is not known yet
     copyMenu.showPopover();
     return;
   }
@@ -52,8 +52,7 @@ async function copyPath(kind) {
     console.warn('[Doctree] copy failed:', err);
     return;
   }
-  copyPathBtn.textContent = 'Copied';
-  setTimeout(() => { copyPathBtn.textContent = 'Copy path'; }, 1200);
+  flash(copyContentBtn);
 }
 
 function fillCopyMenu() {
@@ -93,10 +92,16 @@ function fillCopyMenu() {
     await putFolder(currentFolder);
     await refreshFolders();
     copyMenu.hidePopover();
-    copyPath('absolute');
+    copy('absolute');
   });
 
-  copyMenu.replaceChildren(abs, menuItem('Relative path', relPath(), { copy: 'relative' }), document.createElement('hr'), form);
+  copyMenu.replaceChildren(
+    menuItem('File content', 'Exact text on disk', { copy: 'content' }),
+    abs,
+    menuItem('Relative path', relPath(), { copy: 'relative' }),
+    document.createElement('hr'),
+    form,
+  );
 }
 
 /* ── Folders: pick, remember, switch ────────────────────────────────────── */
@@ -212,7 +217,7 @@ async function showRoot(rec) {
   state.rootHandle = rec.handle;
   state.currentHandle = null; // nothing is open in the new folder yet
   state.currentPath = [];
-  copyGroup.hidden = true;
+  copyGroup.hidden = modeSwitch.hidden = fileMetaEl.hidden = true;
   fileNameEl.textContent = '';
   renderCrumbs();
   treeEl.innerHTML = '<span style="color:var(--muted);font-size:0.8em">Loading…</span>';

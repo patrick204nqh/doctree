@@ -6,14 +6,16 @@ Forked from [aktnk/chrome-markdown-viewer](https://github.com/aktnk/chrome-markd
 
 ## What it reads
 
-| Type | Shown as |
+| Type | **Preview** (default) |
 |------|----------|
 | `.md` | Rendered Markdown (GFM, Mermaid diagrams, relative images, links between files). A leading `key: value` front matter block shows as a row of chips |
-| `.html` | Rendered in a sandboxed frame: scripts run, but with no access to the extension or the folder. Relative stylesheets, scripts and images load from the folder, and links to other files open in Doctree. The **Source** button shows the file text |
-| `.json`, `.jsonl` | Indented and highlighted. **Raw** shows the file as it is on disk. Files over 1 MB show as raw text |
-| `.csv`, `.tsv` | A table with a sticky header row. **Raw** shows the file text. Files over 1 MB show as raw text |
-| `.rb`, `.py`, `.js`, `.ts`, `.sh`, `.rs`, `.go`, `.sql`, `.css`, `.xml`, `.yml`, `.yaml`, `.toml` | Source with syntax highlighting |
-| `.txt`, `.log` | Plain text, exactly as in the file |
+| `.html` | Rendered in a sandboxed frame: scripts run, but with no access to the extension or the folder. Relative stylesheets, scripts and images load from the folder, and links to other files open in Doctree |
+| `.json`, `.jsonl` | A tree: objects and arrays fold, the first two levels start open, and **Expand all** and **Collapse all** open or close the rest. Text that does not parse, or a file over 1 MB or about 20,000 values, shows as indented, highlighted text |
+| `.csv`, `.tsv` | A table with a sticky header row. Files over 1 MB show as text |
+| `.rb`, `.py`, `.js`, `.ts`, `.sh`, `.rs`, `.go`, `.sql`, `.css`, `.xml`, `.yml`, `.yaml`, `.toml` | Source with syntax highlighting (no switch: this is the text) |
+| `.txt`, `.log` | Plain text, exactly as in the file (no switch) |
+
+**Preview | Raw:** a file with a preview has a switch at the right of the toolbar, or press `r`. **Raw** shows the exact text on disk, markup included, so you can select and copy it. The choice lasts for that file until you open another.
 
 Text files over 256 KB show the first 256 KB with a **Show all** button. The toolbar shows the file type and size (`Ruby · 4.2 KB`). Fenced code blocks in Markdown are highlighted too.
 
@@ -47,7 +49,7 @@ Links between files work with Back and Forward. A link to a folder (`flows/`) op
 
 **Recent folders:** the arrow beside **Open Folder** lists the last 8 folders you opened. Pick one to switch to it, or use the cross to forget it. Doctree reopens the most recent one after a Chrome restart, or shows a **Reopen** button if Chrome asks for read access again.
 
-**Copy path** copies the absolute path. The arrow beside it also offers the relative path (from the opened folder). Chrome does not tell an extension where a folder lives on disk, so the first time you copy an absolute path Doctree asks for the folder's location once and remembers it for that folder.
+**Copy:** the button copies the file's exact text, whichever view is showing. Its arrow offers the same text, the absolute path, or the relative path (from the opened folder). Chrome does not tell an extension where a folder lives on disk, so the first time you copy an absolute path Doctree asks for the folder's location once and remembers it for that folder. A code block shows its own **Copy** button on hover.
 
 The filter box above the tree matches file paths, folder names included.
 

@@ -3,11 +3,12 @@
  * Opens a file and shows it: navigation (links, history, deep links), Markdown and text
  * rendering, relative images, and reload when the file changes on disk.
  */
-import { state, bodyEl, fileNameEl, fileMetaEl, viewBtn, contentWrapper, copyGroup } from './state.js';
+import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr,
   hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited,
 } from './core.js';
+import { flash } from './dom.js';
 import { buildToc } from './outline.js';
 import { renderCrumbs } from './crumbs.js';
 import { highlightActiveByPath } from './tree.js';
@@ -121,35 +122,43 @@ async function loadFileHandle(handle, pathArr) {
   contentWrapper.scrollTop = 0;
 }
 
-/* The toolbar button swaps a file's formatted view for its raw text. */
-const FORMATTED = { html: 'Rendered', csv: 'Table', tsv: 'Table', json: 'Formatted', jsonl: 'Formatted' };
+/* Preview | Raw: a file with a preview opens in it; the switch (or "r") shows the text on disk. */
+const PREVIEW = new Set(['md', 'html', 'csv', 'tsv', 'json', 'jsonl']);
 
-viewBtn.addEventListener('click', () => {
+function setRaw(raw) {
   const key = state.currentPath.join('/');
-  rawPath = rawPath === key ? null : key;
+  if ((rawPath === key) === raw) return;
+  rawPath = raw ? key : null;
   loadFileHandle(state.currentHandle, state.currentPath);
-});
+}
+previewBtn.addEventListener('click', () => setRaw(false));
+rawBtn.addEventListener('click', () => setRaw(true));
+
+/** The text on disk, whichever view is showing: what the Copy button copies. */
+export async function currentText() {
+  return (await state.currentHandle.getFile()).text();
+}
 
 async function renderFile(file, info, pathArr) {
-  const formatted = FORMATTED[info.ext];
-  const canFormat = formatted && (info.ext === 'html' || file.size <= FORMAT_CAP);
+  const canPreview = PREVIEW.has(info.ext) && (info.ext === 'html' || info.ext === 'md' || file.size <= FORMAT_CAP);
   const raw = rawPath === pathArr.join('/');
   fileMetaEl.textContent = `${info.label} · ${formatSize(file.size)}`;
   fileMetaEl.hidden = false;
-  viewBtn.hidden = !canFormat;
-  viewBtn.textContent = raw ? formatted : info.ext === 'html' ? 'Source' : 'Raw';
-  contentWrapper.classList.toggle('fill', Boolean(canFormat) && !raw && info.ext === 'html');
+  modeSwitch.hidden = !canPreview;
+  previewBtn.setAttribute('aria-pressed', String(!raw));
+  rawBtn.setAttribute('aria-pressed', String(raw));
+  contentWrapper.classList.toggle('fill', canPreview && !raw && info.ext === 'html');
 
-  if (info.ext === 'md') {
+  if (info.ext === 'md' && !raw) {
     await renderMarkdown(await file.text(), { mode: 'folder' });
     await resolveImages(pathArr);
     return;
   }
-  if (canFormat && !raw) {
+  if (canPreview && !raw) {
     const text = await file.text();
     if (info.ext === 'html') await renderHtml(text, pathArr);
     else if (info.ext === 'csv' || info.ext === 'tsv') renderTable(text, info.ext === 'csv' ? ',' : '\t');
-    else renderCode(prettyJson(text, info.ext === 'jsonl'), 'json');
+    else renderJson(text, info.ext === 'jsonl');
   } else {
     await renderText(file, info.lang);
   }
@@ -239,6 +248,9 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
     if (hljs.getLanguage(el.className.slice(9))) hljs.highlightElement(el);
   });
 
+  // A Copy button on each code block
+  bodyEl.querySelectorAll('pre').forEach(wrapCode);
+
   mermaid.initialize({
     startOnLoad: false,
     theme: isDark() ? 'dark' : 'default',
@@ -269,7 +281,7 @@ function renderCode(text, lang) {
   setCode(code, text, lang);
   const pre = document.createElement('pre');
   pre.append(code);
-  bodyEl.replaceChildren(pre);
+  bodyEl.replaceChildren(wrapCode(pre));
   return code;
 }
 
@@ -279,6 +291,98 @@ function setCode(el, text, lang) {
   } else {
     el.textContent = text;
   }
+}
+
+/** A code block with a Copy button that shows on hover. */
+function wrapCode(pre) {
+  const wrap = document.createElement('div');
+  wrap.className = 'code-block';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn code-copy';
+  btn.textContent = 'Copy';
+  btn.title = 'Copy this block';
+  pre.replaceWith(wrap); // does nothing for a block that is not in the page yet
+  wrap.append(pre, btn);
+  return wrap;
+}
+
+bodyEl.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.code-copy');
+  if (!btn) return;
+  try {
+    await navigator.clipboard.writeText(btn.previousElementSibling.textContent.replace(/\n$/, ''));
+  } catch (err) {
+    console.warn('[Doctree] copy failed:', err);
+    return;
+  }
+  flash(btn);
+});
+
+const JSON_NODE_CAP = 20000; // tree rows built before falling back to the indented text
+
+/** JSON or JSONL as a tree whose objects and arrays fold. Text that does not parse, or is too big, shows indented. */
+function renderJson(text, lines) {
+  let count = 0;
+  const el = (tag, cls, txt) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt !== undefined) e.textContent = txt;
+    return e;
+  };
+  const label = (key) => (key === null ? [] : [el('span', 'jk', typeof key === 'number' ? String(key) : JSON.stringify(key)), el('span', 'jp', ': ')]);
+  const scalar = (v) => {
+    const kind = v === null ? 'null' : typeof v;
+    return el('span', 'j-' + kind, kind === 'string' ? JSON.stringify(v) : String(v));
+  };
+  const node = (key, value, depth) => {
+    if (++count > JSON_NODE_CAP) throw new RangeError('too big');
+    const isArr = Array.isArray(value);
+    const entries = value !== null && typeof value === 'object'
+      ? (isArr ? value.map((v, i) => [i, v]) : Object.entries(value)) : null;
+    if (!entries?.length) {
+      const row = el('div', 'jl');
+      row.append(...label(key), entries ? el('span', 'jp', isArr ? '[]' : '{}') : scalar(value));
+      return row;
+    }
+    const [open, close] = isArr ? ['[', ']'] : ['{', '}'];
+    const details = el('details', 'jn');
+    details.open = depth < 2;
+    const summary = el('summary');
+    summary.append(...label(key), el('span', 'jp', open),
+      el('span', 'jhint', ` ${entries.length} ${isArr ? 'items' : 'keys'} ${close}`));
+    const kids = el('div', 'jc');
+    kids.append(...entries.map(([k, v]) => node(k, v, depth + 1)));
+    details.append(summary, kids, el('div', 'jclose', close));
+    return details;
+  };
+
+  const tree = el('div', 'json-tree');
+  try {
+    if (lines) {
+      text.split(/\r?\n/).filter((l) => l.trim()).forEach((l, i) => {
+        let parsed;
+        try { parsed = JSON.parse(l); } catch { parsed = undefined; }
+        const rec = el('div', 'jrec');
+        rec.append(el('span', 'jidx', String(i + 1)), parsed === undefined ? el('div', 'jl j-bad', l) : node(null, parsed, 1));
+        tree.append(rec);
+      });
+    } else {
+      tree.append(node(null, JSON.parse(text), 0));
+    }
+  } catch {
+    renderCode(prettyJson(text, lines), 'json');
+    return;
+  }
+
+  const bar = el('div', 'json-bar');
+  for (const [name, open] of [['Expand all', true], ['Collapse all', false]]) {
+    const btn = el('button', 'btn', name);
+    btn.type = 'button';
+    btn.addEventListener('click', () => tree.querySelectorAll('details').forEach((d) => { d.open = open; }));
+    bar.append(btn);
+  }
+  bodyEl.replaceChildren(bar, tree);
 }
 
 /** CSV or TSV as a table; the first row is the header. */

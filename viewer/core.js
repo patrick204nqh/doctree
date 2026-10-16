@@ -5,7 +5,7 @@
  */
 /** Every shown extension → [label shown in the toolbar, highlight.js language or null]. */
 const FILE_TYPES = {
-  md: ['Markdown', null],
+  md: ['Markdown', 'markdown'],
   json: ['JSON', 'json'], jsonl: ['JSON Lines', 'json'],
   csv: ['CSV', null], tsv: ['TSV', null],
   html: ['HTML', 'xml'], css: ['CSS', 'css'], xml: ['XML', 'xml'],

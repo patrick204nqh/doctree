@@ -2,7 +2,7 @@
  * settings.js
  * One panel for every saved preference, the file-tree toggle, and the keyboard shortcuts.
  */
-import { mainEl, treeToggleBtn, state, pref } from './state.js';
+import { mainEl, treeToggleBtn, modeSwitch, state, pref } from './state.js';
 import { setupMenu, typing } from './dom.js';
 import { setToc, tocOn } from './outline.js';
 import { renderCrumbs } from './crumbs.js';
@@ -83,5 +83,6 @@ document.addEventListener('keydown', (e) => {
     case '\\': if (state.rootHandle) toggleTree(); break;
     case 'o': apply('outline', tocOn() ? 'off' : 'on'); break;
     case 'w': apply('width', PREFS.width.get() === 'full' ? 'contained' : 'full'); break;
+    case 'r': if (!modeSwitch.hidden) modeSwitch.querySelector('[aria-pressed="false"]').click(); break;
   }
 });

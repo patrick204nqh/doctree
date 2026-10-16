@@ -202,6 +202,7 @@ test('splitName: a dotfile or a name with no dot keeps its whole name', () => {
 
 test('fileInfo: label and highlight language by extension, plain Text for the rest', () => {
   assert.deepEqual(C.fileInfo('run.RB'), { ext: 'rb', label: 'Ruby', lang: 'ruby' });
+  assert.deepEqual(C.fileInfo('README.md'), { ext: 'md', label: 'Markdown', lang: 'markdown' }); // raw view highlights it
   assert.deepEqual(C.fileInfo('a.yml'), { ext: 'yml', label: 'YAML', lang: 'yaml' });
   assert.deepEqual(C.fileInfo('notes.txt'), { ext: 'txt', label: 'Text', lang: null });
   assert.deepEqual(C.fileInfo('x.constructor'), { ext: 'constructor', label: 'Text', lang: null });

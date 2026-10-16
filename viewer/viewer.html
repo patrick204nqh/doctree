@@ -36,15 +36,18 @@
       <span id="file-name"></span>
       <nav id="crumbs" aria-label="Path" hidden></nav>
       <span id="file-meta" hidden></span>
+    </div>
+    <div id="toolbar-right">
+      <div id="mode-switch" class="seg" role="group" aria-label="View" hidden>
+        <button id="mode-preview" class="seg-btn" type="button" aria-pressed="true" title="Preview (r)">Preview</button>
+        <button id="mode-raw" class="seg-btn" type="button" aria-pressed="false" title="Raw text (r)">Raw</button>
+      </div>
       <div id="copy-group" class="btn-group" hidden>
-        <button id="copy-path-btn" class="btn" title="Copy the absolute path">Copy path</button>
-        <button id="copy-menu-btn" class="btn caret" popovertarget="copy-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to copy the path" title="More ways to copy the path">
+        <button id="copy-content-btn" class="btn" title="Copy the file's text">Copy</button>
+        <button id="copy-menu-btn" class="btn caret" popovertarget="copy-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to copy" title="Copy the path or the text">
           <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
-    </div>
-    <div id="toolbar-right">
-      <button id="view-toggle" class="btn" hidden></button>
       <button id="quick-btn" class="btn" title="Jump to any file" hidden>Quick open <kbd></kbd></button>
       <button id="settings-btn" class="btn icon-btn" popovertarget="settings-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -71,7 +74,7 @@
   </div>
 
   <div id="folders-menu" class="menu" popover role="menu" aria-label="Recent folders"></div>
-  <div id="copy-menu" class="menu" popover role="menu" aria-label="Copy path"></div>
+  <div id="copy-menu" class="menu" popover role="menu" aria-label="Copy"></div>
   <div id="crumb-menu" class="menu crumb-menu" popover="manual" role="menu" aria-label="Folder contents"></div>
   <div id="settings-menu" class="menu" popover role="dialog" aria-label="Settings">
     <div class="s-row" role="group" aria-labelledby="s-theme">
