@@ -17,6 +17,8 @@ A small demo folder for trying Doctree. Open this folder with **Open Folder** an
 | [data/sales.csv](data/sales.csv) | A CSV table with a sticky header |
 | [src/server.py](src/server.py) | Source with syntax highlighting |
 | [report.html](report.html) | An HTML file in a sandboxed frame |
+| [docs/links.md](docs/links.md) | Hover cards and a video card for trusted sites |
+| [assets/logo.svg](assets/logo.svg), [assets/icon.png](assets/icon.png) | SVG and PNG pictures |
 
 ## Checklist
 

@@ -1,8 +1,8 @@
 # Doctree — agent guide
 
 Chrome extension (Manifest V3) to read a local folder in the browser: file tree on
-the left, file on the right. Markdown, HTML, JSON, CSV and source files. Read-only,
-no account, no tracking, no network calls.
+the left, file on the right. Markdown, HTML, JSON, CSV, source files and images. Read-only,
+no account, no tracking. Network only for trusted-site links (see `viewer/links.js`).
 
 ## Layout
 
@@ -17,10 +17,13 @@ no account, no tracking, no network calls.
 | `examples/demo/` | Sample folder for trying the extension |
 | `store/` | Chrome Web Store listing draft (`listing.md`) |
 | `test/` | Node tests |
+| `scripts/` | Dev scripts: `screenshots.mjs` retakes the README screenshots |
 
 ## Commands
 
 - `npm test` — `node --test test/*.test.js`, no framework, no build step.
+- `npm run screenshots [-- image link-card]` — retakes `docs/screenshots/*.png` from `examples/demo` in the real
+  extension (`scripts/screenshots.mjs`; first `npm i --no-save puppeteer-core`, needs Chrome for Testing).
 - `npm run package` — produces `doctree.zip` (manifest, background, content,
   viewer, libs, icons, LICENSE, THIRD_PARTY_NOTICES) for the Web Store upload.
 

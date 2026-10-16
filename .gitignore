@@ -17,3 +17,6 @@ ehthumbs.db
 
 # Build output
 doctree.zip
+
+# Dependencies (scripts/screenshots.mjs needs `npm i --no-save puppeteer-core`)
+node_modules/

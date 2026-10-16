@@ -8,9 +8,11 @@ import { setToc, tocOn } from './outline.js';
 import { renderCrumbs } from './crumbs.js';
 import { reloadCurrent } from './reader.js';
 import { openPalette } from './palette.js';
+import { getSites, setSites } from './links.js';
 
 const settingsBtn = document.getElementById('settings-btn');
 const settingsMenu = document.getElementById('settings-menu');
+const sitesEl = document.getElementById('s-sites');
 
 export function isDark() {
   return document.documentElement.dataset.theme === 'dark';
@@ -30,6 +32,11 @@ settingsMenu.addEventListener('click', (e) => {
   const b = e.target.closest('[data-pref]');
   if (b) apply(b.dataset.pref, b.dataset.value);
 });
+sitesEl.addEventListener('change', () => {
+  setSites(sitesEl.value);
+  sitesEl.value = getSites().join('\n');
+  if (state.currentHandle) reloadCurrent(); // redraws the open file with the new list
+});
 
 function apply(name, value) {
   PREFS[name].set(value);
@@ -40,6 +47,7 @@ function showSettings() {
   settingsMenu.querySelectorAll('[data-pref]').forEach((b) => {
     b.setAttribute('aria-pressed', String(PREFS[b.dataset.pref].get() === b.dataset.value));
   });
+  if (document.activeElement !== sitesEl) sitesEl.value = getSites().join('\n');
 }
 
 function setTheme(theme) {

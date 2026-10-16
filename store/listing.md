@@ -18,7 +18,7 @@ Doctree opens a folder on your computer and shows a file tree on the left and th
 - HTML files in a sandboxed frame, JSON as a foldable tree, CSV as a table, source files with syntax highlighting
 - Quick open (Cmd/Ctrl K), breadcrumb folder lists, outline panel, Preview | Raw switch, copy path
 - Light and dark theme, keyboard first
-- No account, no tracking, no network calls of its own
+- No account, no tracking; contacts a site only for links to trusted sites you list (hover cards, video thumbnails)
 
 Opening a .md file directly in Chrome also renders it. This needs "Allow access to file URLs" on the extension card.
 
@@ -38,5 +38,5 @@ Opening a .md file directly in Chrome also renders it. This needs "Allow access 
 
 ## Assets
 
-- Screenshots, 1280x800: `docs/screenshots/markdown.png`, `mermaid.png`, `json.png`, `dark-outline.png`, `quick-open.png`.
+- Screenshots, 1280x800: `docs/screenshots/markdown.png`, `mermaid.png`, `json.png`, `dark-outline.png`, `quick-open.png`, `image.png`, `link-card.png`.
 - Small promo tile, 440x280: `brand/doctree-promo-440x280.png` (from `brand/doctree-brand-kit.png`).

@@ -14,7 +14,7 @@ Clearing the extension's data in Chrome removes all of it. File contents are rea
 
 ## Content you open
 
-Doctree makes no network request of its own. Content you open can: a Markdown file that links to a remote image loads that image, and an HTML file can load scripts, styles and images from the web inside its sandboxed frame. Those requests go from your browser to that site.
+Doctree makes network requests only for links to the trusted sites listed in Settings (by default YouTube, Vimeo, Loom, GitHub and Wikipedia): hovering such a link asks that site's public API for a title and description, and a video link on its own line also loads its thumbnail from the site. Nothing else is sent, no cookies or account data go with it, and removing a site from the list stops the requests. Content you open can also make requests: a Markdown file that links to a remote image loads that image, and an HTML file can load scripts, styles and images from the web inside its sandboxed frame. Those requests go from your browser to that site.
 
 ## Contact
 

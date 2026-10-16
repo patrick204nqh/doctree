@@ -29,6 +29,8 @@
 - **Preview | Raw** switch, a Copy menu (text, absolute path, relative path) and an outline panel.
 - **Live refresh:** the open file reloads within 2 seconds of a change.
 - Light and dark theme, keyboard first.
+- **Images:** SVG, PNG, JPEG, GIF and WebP files open as pictures.
+- **Trusted sites:** hover a GitHub, Wikipedia or video link for a card; a video link on its own line shows a thumbnail. The site list is editable in Settings.
 - **Read-only:** Doctree never edits, uploads or deletes anything.
 
 ## Screenshots
@@ -38,6 +40,8 @@
 | ![Mermaid diagram in a Markdown file](docs/screenshots/mermaid.png) | ![JSON file as a foldable tree](docs/screenshots/json.png) |
 | **Dark theme and outline** | **Quick open** |
 | ![Dark theme with the outline panel](docs/screenshots/dark-outline.png) | ![Quick open palette](docs/screenshots/quick-open.png) |
+| **Images (SVG, PNG and more)** | **Link cards for trusted sites** |
+| ![An SVG file shown as a picture](docs/screenshots/image.png) | ![Hover card on a GitHub link and a video thumbnail card](docs/screenshots/link-card.png) |
 
 ## Install
 
@@ -101,7 +105,7 @@ Dotfiles, `node_modules` and folders with no supported file are hidden from the 
 
 ## Permissions and privacy
 
-`storage` (single-file mode) and `file://*`. No host access to websites: Doctree itself calls no site. Content you open can: Markdown that links to a remote image loads it, and an HTML file can load scripts, styles and images from the web inside its sandboxed frame.
+`storage` (single-file mode) and `file://*`. No host access to websites. Doctree calls a site only for links to the trusted sites you list in Settings (YouTube, GitHub, Wikipedia and a few more by default): hovering such a link reads that page's public API, and a video link on its own line shows its thumbnail. Remove a site from the list to stop this. Content you open can also call out: Markdown that links to a remote image loads it, and an HTML file can load scripts, styles and images from the web inside its sandboxed frame.
 
 Rendered Markdown is sanitized with DOMPurify and Mermaid runs in strict mode. See [SECURITY.md](./SECURITY.md) and [PRIVACY.md](./PRIVACY.md) (no data collected).
 

@@ -12,7 +12,7 @@ Use GitHub's private reporting: **Security** tab, then **Report a vulnerability*
 
 ## Known limits
 
-- A Markdown file can load a remote image, and an HTML file can load remote scripts, styles and images inside its sandbox. Doctree itself calls no website.
+- A Markdown file can load a remote image, and an HTML file can load remote scripts, styles and images inside its sandbox. Doctree itself calls a website only for links to trusted sites the reader lists in Settings: a public-API request for a hover card (shown as plain text) and the thumbnail of a video link alone on its line.
 - Open only HTML files you trust, as you would in any browser.
 
 ## Supported versions

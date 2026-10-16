@@ -3,10 +3,10 @@
  * Opens a file and shows it: navigation (links, history, deep links), Markdown and text
  * rendering, relative images, and reload when the file changes on disk.
  */
-import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup } from './state.js';
+import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG,
-  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf,
+  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf, IMAGE_EXTS, svgSize,
 } from './core.js';
 import { flash } from './dom.js';
 import { buildToc } from './outline.js';
@@ -14,6 +14,7 @@ import { renderCrumbs } from './crumbs.js';
 import { highlightActiveByPath } from './tree.js';
 import { rememberRecent } from './palette.js';
 import { isDark } from './settings.js';
+import { decorateLinks } from './links.js';
 
 const TEXT_CAP = 256 * 1024; // bytes shown before "Show all"
 const FORMAT_CAP = 1024 * 1024; // largest file shown formatted (JSON, CSV); highlighting stops at twice this
@@ -128,7 +129,8 @@ async function loadFileHandle(handle, pathArr) {
 }
 
 /* Preview | Raw: a file with a preview opens in it; the switch (or "r") shows the text on disk. */
-const PREVIEW = new Set(['md', 'html', 'csv', 'tsv', 'json', 'jsonl']);
+const PREVIEW = new Set(['md', 'html', 'svg', 'csv', 'tsv', 'json', 'jsonl']);
+const UNCAPPED = new Set(['md', 'html', 'svg']); // previewed at any size
 
 function setRaw(raw) {
   const key = state.currentPath.join('/');
@@ -145,7 +147,7 @@ export async function currentText() {
 }
 
 async function renderFile(file, info, pathArr) {
-  const canPreview = PREVIEW.has(info.ext) && (info.ext === 'html' || info.ext === 'md' || file.size <= FORMAT_CAP);
+  const canPreview = PREVIEW.has(info.ext) && (UNCAPPED.has(info.ext) || file.size <= FORMAT_CAP);
   const raw = rawPath === pathArr.join('/');
   fileMetaEl.textContent = `${info.label} · ${formatSize(file.size)}`;
   fileMetaEl.hidden = false;
@@ -153,6 +155,14 @@ async function renderFile(file, info, pathArr) {
   previewBtn.setAttribute('aria-pressed', String(!raw));
   rawBtn.setAttribute('aria-pressed', String(raw));
   contentWrapper.classList.toggle('fill', canPreview && !raw && info.ext === 'html');
+
+  const image = IMAGE_EXTS.has(info.ext) && !(info.ext === 'svg' && raw);
+  copyContentBtn.disabled = image && info.ext !== 'svg'; // a PNG has no text to copy
+  if (image) {
+    await renderImage(file, info);
+    buildToc();
+    return;
+  }
 
   if (info.ext === 'md' && !raw) {
     await renderMarkdown(await file.text(), { mode: 'folder' });
@@ -237,6 +247,7 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
 
   const { fields, body } = splitFrontmatter(markdown);
   bodyEl.innerHTML = DOMPurify.sanitize(marked.parse(body, { renderer, gfm: true, breaks: false }), PURIFY_CONFIG);
+  decorateLinks(bodyEl);
   if (fields.length) bodyEl.prepend(frontmatterCard(fields));
   buildToc();
 
@@ -264,6 +275,23 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
   await mermaid.run({ querySelector: '.mermaid' }).catch((err) => {
     console.error('[Doctree] mermaid:', err);
   });
+}
+
+/** A picture scaled to fit, with its pixel size in the toolbar. Inside an <img> an SVG cannot run scripts or load anything. */
+async function renderImage(file, info) {
+  const img = document.createElement('img');
+  img.alt = file.name;
+  img.className = 'picture';
+  const url = URL.createObjectURL(info.ext === 'svg' ? file.slice(0, file.size, 'image/svg+xml') : file);
+  blobUrls.push(url);
+  img.src = url;
+  bodyEl.replaceChildren(img);
+
+  const showSize = (dims) => { fileMetaEl.textContent = [info.label, dims, formatSize(file.size)].join(' · '); };
+  // An SVG reports its declared size (an <img> would say 150 × 150 for one with none); a bitmap reports what it decoded to.
+  const declared = info.ext === 'svg' ? svgSize(await file.text()) : null;
+  if (declared) showSize(declared);
+  else if (info.ext !== 'svg') img.addEventListener('load', () => img.isConnected && showSize(`${img.naturalWidth} × ${img.naturalHeight}`), { once: true });
 }
 
 async function renderText(file, lang) {

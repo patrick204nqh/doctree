@@ -25,7 +25,7 @@ test('buildTree: index.md beats README.md beats task.md', async () => {
 test('buildTree: skips dot names, build dirs and unsupported files', async () => {
   const root = dir('r', [
     file('.hidden.md'), dir('.git', [file('a.md')]), dir('node_modules', [file('a.md')]),
-    file('image.png'), file('notes.JSON'), file('a.md'),
+    file('archive.zip'), file('notes.JSON'), file('a.md'),
   ]);
   assert.deepEqual(names(await C.buildTree(root, ['r'])), ['a.md', 'notes.JSON']);
 });
@@ -209,9 +209,10 @@ test('fileInfo: label and highlight language by extension, plain Text for the re
   assert.deepEqual(C.fileInfo('Makefile'), { ext: '', label: 'Text', lang: null });
 });
 
-test('SHOWN: scripts and config files are listed, images are not', () => {
-  for (const n of ['a.rb', 'a.py', 'a.sh', 'a.yaml', 'a.toml', 'a.HTML']) assert.ok(C.SHOWN.test(n), n);
-  assert.ok(!C.SHOWN.test('a.png'));
+test('SHOWN: scripts, config files and images are listed, other binaries are not', () => {
+  for (const n of ['a.rb', 'a.py', 'a.sh', 'a.yaml', 'a.toml', 'a.HTML', 'a.svg', 'a.PNG', 'a.jpeg', 'a.webp']) assert.ok(C.SHOWN.test(n), n);
+  assert.ok(!C.SHOWN.test('a.zip'));
+  assert.ok(C.IMAGE_EXTS.has(C.fileInfo('logo.PNG').ext));
 });
 
 test('formatSize: bytes, KB, MB', () => {
@@ -249,4 +250,51 @@ test('stampOf: changes with modified time or size', () => {
   assert.notEqual(C.stampOf({ lastModified: 1001, size: 5 }), s);
   assert.notEqual(C.stampOf({ lastModified: 1000, size: 6 }), s);
   assert.equal(C.stampOf({ lastModified: 1000, size: 5 }), s);
+});
+
+test('parseSites: hosts only, www and scheme and paths dropped, no repeats', () => {
+  assert.deepEqual(C.parseSites('https://www.GitHub.com/a/b, youtube.com\n\nyoutube.com'), ['github.com', 'youtube.com']);
+  assert.deepEqual(C.parseSites('  '), []);
+});
+
+test('previewFor: video, GitHub and Wikipedia links get a card API, unknown sites are null', () => {
+  const S = C.DEFAULT_SITES;
+  const yt = 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  for (const h of ['https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=5', 'https://youtu.be/dQw4w9WgXcQ', 'https://youtube.com/shorts/dQw4w9WgXcQ']) {
+    assert.deepEqual(C.previewFor(h, S).card, { url: yt, kind: 'video' }, h);
+    assert.equal(C.previewFor(h, S).video, true);
+  }
+  assert.equal(C.previewFor('https://youtube.com/watch?v=short', S).card, undefined);
+  assert.equal(C.previewFor('https://vimeo.com/76979871', S).card.url, 'https://vimeo.com/api/oembed.json?url=' + encodeURIComponent('https://vimeo.com/76979871'));
+  assert.equal(C.previewFor('https://www.loom.com/share/abc123', S).card.url, 'https://www.loom.com/v1/oembed?url=' + encodeURIComponent('https://www.loom.com/share/abc123'));
+  assert.equal(C.previewFor('https://github.com/a/b', S).video, undefined);
+  assert.deepEqual(C.previewFor('https://github.com/a/b', S).card, { url: 'https://api.github.com/repos/a/b', kind: 'github' });
+  assert.equal(C.previewFor('https://github.com/a/b/pull/7', S).card.url, 'https://api.github.com/repos/a/b/issues/7');
+  assert.equal(C.previewFor('https://github.com/a/b/blob/main/x.md', S).card, undefined);
+  assert.equal(C.previewFor('https://en.wikipedia.org/wiki/Markdown', S).card.url, 'https://en.wikipedia.org/api/rest_v1/page/summary/Markdown');
+  assert.equal(C.previewFor('https://example.com/', S), null);
+  assert.equal(C.previewFor('javascript:alert(1)', S), null);
+});
+
+test('previewFor: only listed sites, and a lookalike host is not trusted', () => {
+  assert.equal(C.previewFor('https://github.com/a/b', ['youtube.com']), null);
+  assert.equal(C.previewFor('https://github.com.evil.io/a/b', C.DEFAULT_SITES), null);
+  assert.equal(C.previewFor('https://notgithub.com/a/b', C.DEFAULT_SITES), null);
+  assert.deepEqual(C.previewFor('https://example.com/x', ['example.com']), { site: 'example.com' });
+});
+
+test('cardText: repo, issue, Wikipedia and video results become plain strings', () => {
+  assert.deepEqual(C.cardText('github', { full_name: 'a/b', description: 'd', stargazers_count: 3, language: 'JS' }), { title: 'a/b', text: 'd', meta: '★ 3 · JS' });
+  assert.deepEqual(C.cardText('github', { number: 7, title: 'Fix', state: 'open', pull_request: {}, user: { login: 'me' } }), { title: '#7 Fix', text: '', meta: 'Pull request · open · me' });
+  assert.deepEqual(C.cardText('wikipedia', { title: 'Markdown', extract: 'A markup language', description: 'Language' }), { title: 'Markdown', text: 'A markup language', meta: 'Language' });
+  assert.deepEqual(C.cardText('video', { title: 'T', author_name: 'Me', provider_name: 'YouTube', thumbnail_url: 'https://i.ytimg.com/x.jpg' }), { title: 'T', text: '', meta: 'Me · YouTube', image: 'https://i.ytimg.com/x.jpg' });
+  assert.equal(C.cardText('video', { title: 'T', thumbnail_url: 'javascript:1' }).image, '');
+});
+
+test('svgSize: width and height win, then viewBox; units or no size give null', () => {
+  assert.equal(C.svgSize('<svg xmlns="x" width="120px" height="80" viewBox="0 0 1 1">'), '120 × 80');
+  assert.equal(C.svgSize('<?xml version="1.0"?><svg viewBox="0 0 64 48" stroke-width="3">'), '64 × 48');
+  assert.equal(C.svgSize("<svg viewBox='0,0,10.5,20'>"), '10.5 × 20');
+  assert.equal(C.svgSize('<svg width="50%" height="10em">'), null);
+  assert.equal(C.svgSize('not svg'), null);
 });

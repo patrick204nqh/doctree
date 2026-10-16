@@ -25,7 +25,11 @@ const FILE_TYPES = {
   rb: ['Ruby', 'ruby'], py: ['Python', 'python'], js: ['JavaScript', 'javascript'], ts: ['TypeScript', 'typescript'],
   sh: ['Shell', 'bash'], rs: ['Rust', 'rust'], go: ['Go', 'go'], sql: ['SQL', 'sql'],
   yml: ['YAML', 'yaml'], yaml: ['YAML', 'yaml'], toml: ['TOML', 'ini'],
+  svg: ['SVG', 'xml'],
+  png: ['PNG', null], jpg: ['JPEG', null], jpeg: ['JPEG', null], gif: ['GIF', null], webp: ['WebP', null],
 };
+/** Shown as a picture. SVG is also text, so it keeps the Raw view; the rest are binary. */
+export const IMAGE_EXTS = new Set(['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp']);
 const EXTENSIONS = Object.keys(FILE_TYPES);
 const EXT_PATTERN = EXTENSIONS.join('|');
 export const SHOWN = new RegExp(`\\.(${EXT_PATTERN})$`, 'i');
@@ -273,4 +277,79 @@ export function hashToPath(hash, rootName) {
 export function splitName(name) {
   const dot = name.lastIndexOf('.');
   return dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ''];
+}
+
+/* ── Trusted sites: embeds and hover cards for links ──────────────────────── */
+
+/** A site also covers its subdomains: "wikipedia.org" covers "en.wikipedia.org". */
+export const DEFAULT_SITES = ['youtube.com', 'youtu.be', 'vimeo.com', 'loom.com', 'github.com', 'wikipedia.org'];
+
+/** "https://www.GitHub.com/a, youtube.com" → ["github.com", "youtube.com"]: hosts only, one per entry. */
+export const parseSites = (text) => [...new Set(
+  text.toLowerCase().split(/[\s,]+/).map((s) => s.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '')).filter(Boolean),
+)];
+
+const SEG = /^[\w.-]+$/;
+
+/**
+ * How a link to a trusted site previews, or null when the site is not trusted:
+ * { site, card: { url, kind } } a public JSON API to read a hover card from (video: true for a video link, which can also
+ * stand alone on its line as a thumbnail card), or { site } a trusted site with nothing to preview.
+ */
+export function previewFor(href, sites) {
+  let u;
+  try { u = new URL(href); } catch { return null; }
+  if (!/^https?:$/.test(u.protocol)) return null;
+  const host = u.hostname.replace(/^www\./, '');
+  const site = sites.find((s) => host === s || host.endsWith('.' + s));
+  if (!site) return null;
+  const seg = u.pathname.split('/').filter(Boolean);
+  const id = (re, v) => (v && re.test(v) ? v : null);
+  const video = (api) => ({ site, video: true, card: { url: api, kind: 'video' } });
+  const oembed = (base, page) => `${base}${encodeURIComponent(page)}`;
+
+  if (host === 'youtu.be' || host === 'youtube.com' || host === 'm.youtube.com') {
+    const v = host === 'youtu.be' ? seg[0] : seg[0] === 'watch' ? u.searchParams.get('v') : ['shorts', 'embed', 'live'].includes(seg[0]) ? seg[1] : null;
+    const yt = id(/^[\w-]{11}$/, v);
+    return yt ? video(oembed('https://www.youtube.com/oembed?format=json&url=', `https://www.youtube.com/watch?v=${yt}`)) : { site };
+  }
+  if (host === 'vimeo.com') {
+    const vimeo = id(/^\d+$/, seg[0]);
+    return vimeo ? video(oembed('https://vimeo.com/api/oembed.json?url=', `https://vimeo.com/${vimeo}`)) : { site };
+  }
+  if (host === 'loom.com') {
+    const loom = seg[0] === 'share' && id(/^\w+$/, seg[1]);
+    return loom ? video(oembed('https://www.loom.com/v1/oembed?url=', `https://www.loom.com/share/${loom}`)) : { site };
+  }
+  if (host === 'github.com' && seg.length >= 2 && SEG.test(seg[0]) && SEG.test(seg[1])) {
+    const repo = `https://api.github.com/repos/${seg[0]}/${seg[1]}`;
+    if (seg.length === 2) return { site, card: { url: repo, kind: 'github' } };
+    if ((seg[2] === 'issues' || seg[2] === 'pull') && /^\d+$/.test(seg[3] ?? '')) return { site, card: { url: `${repo}/issues/${seg[3]}`, kind: 'github' } };
+  }
+  if (/^[a-z-]+\.wikipedia\.org$/.test(host) && seg[0] === 'wiki' && seg[1]) {
+    return { site, card: { url: `https://${host}/api/rest_v1/page/summary/${seg[1]}`, kind: 'wikipedia' } };
+  }
+  return { site };
+}
+
+/** The JSON a card API returned → { title, text, meta } as plain strings (shown with textContent, never as HTML); a video adds its https thumbnail URL as image. */
+export function cardText(kind, d) {
+  if (kind === 'video') return { title: d.title ?? '', text: '', meta: [d.author_name, d.provider_name].filter(Boolean).join(' · '), image: /^https:\/\//.test(d.thumbnail_url) ? d.thumbnail_url : '' };
+  if (kind === 'wikipedia') return { title: d.title ?? '', text: d.extract ?? '', meta: d.description ?? '' };
+  if (d.number) { // a GitHub issue or pull request
+    return { title: `#${d.number} ${d.title}`, text: '', meta: [d.pull_request ? 'Pull request' : 'Issue', d.state, d.user?.login].filter(Boolean).join(' · ') };
+  }
+  return { title: d.full_name ?? '', text: d.description ?? '', meta: [`★ ${d.stargazers_count ?? 0}`, d.language].filter(Boolean).join(' · ') };
+}
+
+/** "64 × 64" from an SVG's width and height, else its viewBox; null when it declares neither (or units other than px). */
+export function svgSize(text) {
+  const tag = /<svg\b[^>]*>/i.exec(text)?.[0];
+  if (!tag) return null;
+  const attr = (name) => new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, 'i').exec(tag)?.[1];
+  const px = (v) => (/^\s*\d+(\.\d+)?(px)?\s*$/.test(v ?? '') ? parseFloat(v) : null);
+  const [w, h] = [px(attr('width')), px(attr('height'))];
+  if (w && h) return `${w} × ${h}`;
+  const vb = attr('viewBox')?.trim().split(/[\s,]+/).map(Number);
+  return vb?.length === 4 && vb[2] > 0 && vb[3] > 0 ? `${vb[2]} × ${vb[3]}` : null;
 }

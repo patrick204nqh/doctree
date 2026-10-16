@@ -1051,3 +1051,69 @@ details:has(.tree-file.active) > .tree-dir .ico {
 .json-tree .jrec { display: flex; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
 .json-tree .jidx { flex: none; min-width: 2.5em; text-align: right; color: var(--muted); }
 .json-tree .jrec > :last-child { flex: 1; min-width: 0; }
+
+/* ── Trusted-site links: label, video card, hover card ────────────────────── */
+a.trusted::after {
+  content: ' · ' attr(data-site);
+  font-size: 0.75em;
+  color: var(--muted);
+}
+a.video-card {
+  display: block;
+  max-width: 480px;
+  overflow: hidden;
+  color: var(--fg);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+a.video-card:hover { border-color: var(--link); }
+a.video-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 0;
+  background: var(--border);
+}
+a.video-card b, a.video-card small { display: block; padding: 0 12px; }
+a.video-card b { padding-top: 8px; }
+a.video-card small { padding-bottom: 8px; color: var(--muted); }
+#link-card {
+  position: fixed;
+  z-index: 10;
+  box-sizing: border-box;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+  pointer-events: none;
+}
+#link-card[hidden] { display: none; }
+#link-card p { margin: 4px 0; color: var(--fg); }
+#link-card small { color: var(--muted); }
+.s-sites { flex-direction: column; align-items: stretch; gap: 4px; }
+.s-sites small { color: var(--muted); }
+.s-sites textarea {
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  resize: vertical;
+}
+
+/* An image file: fits the reading area, centered; a viewBox-only SVG would otherwise fill the width and run off the bottom */
+#markdown-body img.picture {
+  display: block;
+  margin: 0 auto;
+  max-height: calc(100vh - 140px);
+  object-fit: contain;
+}

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Images: `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif` and `.webp` files are listed in the tree and shown as pictures. SVG keeps a Raw view.
+- Trusted sites: hovering a GitHub, Wikipedia, YouTube, Vimeo or Loom link shows a card, and a video link on its own line becomes a thumbnail card. The list is editable in Settings. Doctree now makes requests for these links only; see `PRIVACY.md`.
 - Security: rendered Markdown now goes through DOMPurify, and Mermaid runs at `securityLevel: 'strict'`.
 - Add `minimum_chrome_version` 102, `SECURITY.md`, `PRIVACY.md`, `CONTRIBUTING.md`, a CI test workflow and `npm run package`.
 - Fix: the first element of a file has no top margin, so a file that starts with a heading no longer leaves an 80px gap under the toolbar.
