@@ -1,7 +1,7 @@
-// Run: node --test test/
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const C = require('../viewer/core.js');
+// Run: npm test
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as C from '../viewer/core.js';
 
 const file = (name) => ({ kind: 'file', name });
 const dir = (name, entries) => ({
@@ -154,4 +154,35 @@ test('folderItems: entry file, then subfolders, then files, one level deep', asy
   );
   assert.deepEqual(C.folderItems(flat, ['r', 'a'])[1].path, ['r', 'a', 'deep']);
   assert.deepEqual(C.folderItems(flat, ['r', 'nope']), []);
+});
+
+test('pushRecent: newest first, no repeats, capped', () => {
+  assert.deepEqual(C.pushRecent(['a', 'b', 'c'], 'b', 3), ['b', 'a', 'c']);
+  assert.deepEqual(C.pushRecent(['a', 'b', 'c'], 'd', 3), ['d', 'a', 'b']);
+});
+
+test('recentFiles: leaves out the open file and files that no longer exist', () => {
+  const files = [{ rel: 'a.md' }, { rel: 'b.md' }];
+  assert.deepEqual(C.recentFiles(['b.md', 'gone.md', 'a.md'], 'a.md', files), [{ rel: 'b.md' }]);
+});
+
+test('parseBase: needs a full path; trailing slashes are dropped', () => {
+  assert.equal(C.parseBase(' /Users/me/notes// '), '/Users/me/notes');
+  assert.equal(C.parseBase('C:\\Users\\me\\'), 'C:\\Users\\me');
+  assert.equal(C.parseBase('notes'), null);
+  assert.equal(C.parseBase('/'), null);
+});
+
+test('pathToHash and hashToPath: round-trip names with spaces and # characters', () => {
+  const path = ['root', 'my docs', 'a#b.md'];
+  assert.equal(C.pathToHash(path), '#my%20docs/a%23b.md');
+  assert.deepEqual(C.hashToPath(C.pathToHash(path), 'root'), path);
+  assert.equal(C.hashToPath('', 'root'), null);
+  assert.equal(C.hashToPath('#', 'root'), null);
+});
+
+test('splitName: a dotfile or a name with no dot keeps its whole name', () => {
+  assert.deepEqual(C.splitName('notes.v2.md'), ['notes.v2', '.md']);
+  assert.deepEqual(C.splitName('.env'), ['.env', '']);
+  assert.deepEqual(C.splitName('LICENSE'), ['LICENSE', '']);
 });

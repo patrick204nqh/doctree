@@ -57,7 +57,22 @@ Opening a `.md` file directly in Chrome also renders it. This needs **Allow acce
 
 ## Develop
 
-`viewer/core.js` holds the pure logic (tree building, search, link resolution, front matter, heading ids) with no DOM, so Node can test it: `node --test 'test/*.test.js'`. `viewer/viewer.js` is the DOM and Chrome wiring; check it by loading the extension unpacked.
+`viewer/core.js` holds the pure logic (tree building, search, link resolution, front matter, heading ids, recent files, hash paths) with no DOM, so Node can test it: `npm test`. The rest of `viewer/` is plain ES modules with no build step, one per feature:
+
+| File | Owns |
+|------|------|
+| `viewer.js` | Entry point: single-file or folder mode |
+| `state.js` | Open folder and file, shared page elements, saved preferences |
+| `dom.js` | Icons, element builders, popover menu behaviour |
+| `settings.js` | Settings panel, tree toggle, keyboard shortcuts |
+| `folders.js` | Pick, remember and switch folders (IndexedDB); copy path |
+| `tree.js` | Sidebar tree, filter, resize, rescan |
+| `crumbs.js` | Breadcrumb and its folder lists |
+| `palette.js` | Quick open and recent files |
+| `outline.js` | Outline panel |
+| `reader.js` | Navigation, Markdown and text rendering, reload on change |
+
+Check the DOM code by loading the extension unpacked.
 
 ## License
 
