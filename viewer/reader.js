@@ -455,11 +455,21 @@ function frontmatterCard(fields) {
     const chip = document.createElement('span');
     const label = document.createElement('b');
     label.textContent = key;
-    chip.append(label, value);
+    chip.append(label, fieldLink(value) ?? value);
     if (key === 'status') chip.dataset.status = value;
     card.append(chip);
   }
   return card;
+}
+
+/** A frontmatter value that names a file or folder in the open folder (next_runbook: ../b/draft.md) becomes a link; else null. */
+function fieldLink(value) {
+  if (!state.rootHandle || !isRelativeLink(value) || !resolveLink(state.allFiles, state.currentPath, value)) return null;
+  const a = document.createElement('a');
+  a.href = '#';
+  a.dataset.mdLink = value;
+  a.textContent = value;
+  return a;
 }
 
 /** The file in the open folder that a relative reference points at (image, stylesheet, script), or null. */

@@ -519,6 +519,9 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border-color: var(--link);
   color: var(--link);
 }
+.fm a {
+  color: var(--link);
+}
 
 #markdown-body .btn {
   margin-top: 12px;

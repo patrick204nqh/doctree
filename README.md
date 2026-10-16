@@ -8,7 +8,7 @@ Forked from [aktnk/chrome-markdown-viewer](https://github.com/aktnk/chrome-markd
 
 | Type | **Preview** (default) |
 |------|----------|
-| `.md` | Rendered Markdown (GFM, Mermaid diagrams, relative images, links between files). A leading `key: value` front matter block shows as a row of chips |
+| `.md` | Rendered Markdown (GFM, Mermaid diagrams, relative images, links between files). A leading `key: value` front matter block shows as a row of chips; a value that is a path to a file or folder in the open folder (`next: ../b/draft.md`) is a link |
 | `.html` | Rendered in a sandboxed frame: scripts run, but with no access to the extension or the folder. Relative stylesheets, scripts and images load from the folder, and links to other files open in Doctree |
 | `.json`, `.jsonl` | A tree: objects and arrays fold, the first two levels start open, and **Expand all** and **Collapse all** open or close the rest. Text that does not parse, or a file over 1 MB or about 20,000 values, shows as indented, highlighted text |
 | `.csv`, `.tsv` | A table with a sticky header row. Files over 1 MB show as text |
