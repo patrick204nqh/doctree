@@ -389,6 +389,7 @@ details:has(.tree-file.active) > .tree-dir .ico {
   font-weight: 600;
   line-height: 1.25;
 }
+#markdown-body > :first-child { margin-top: 0; }
 
 #markdown-body h1 { font-size: 2em;   padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
 #markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--border); }
