@@ -39,4 +39,4 @@ Opening a .md file directly in Chrome also renders it. This needs "Allow access 
 ## Assets
 
 - Screenshots, 1280x800: `docs/screenshots/markdown.png`, `mermaid.png`, `json.png`, `dark-outline.png`, `quick-open.png`.
-- Still to make: small promo tile, 440x280 (crop from `brand/doctree-brand-kit.png`).
+- Small promo tile, 440x280: `brand/doctree-promo-440x280.png` (from `brand/doctree-brand-kit.png`).
