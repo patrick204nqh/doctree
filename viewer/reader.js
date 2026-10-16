@@ -264,8 +264,11 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
     if (hljs.getLanguage(el.className.slice(9))) hljs.highlightElement(el);
   });
 
-  // A Copy button on each code block
+  // A Copy button on each code block and each quote (a quote holding a code block already has one; a nested quote rides on its outer one)
   bodyEl.querySelectorAll('pre').forEach(wrapCode);
+  bodyEl.querySelectorAll('blockquote').forEach((q) => {
+    if (!q.parentElement.closest('blockquote') && !q.querySelector('pre')) wrapCode(q);
+  });
 
   mermaid.initialize({
     startOnLoad: false,
@@ -326,7 +329,7 @@ function setCode(el, text, lang) {
   }
 }
 
-/** A code block with a Copy button that shows on hover. */
+/** A code block or quote with a Copy button that shows on hover. */
 function wrapCode(pre) {
   const wrap = document.createElement('div');
   wrap.className = 'code-block';
@@ -344,7 +347,7 @@ bodyEl.addEventListener('click', async (e) => {
   const btn = e.target.closest('.code-copy');
   if (!btn) return;
   try {
-    await navigator.clipboard.writeText(btn.previousElementSibling.textContent.replace(/\n$/, ''));
+    await navigator.clipboard.writeText(btn.previousElementSibling.innerText.replace(/\n$/, '')); // innerText keeps a quote's paragraph breaks
   } catch (err) {
     console.warn('[Doctree] copy failed:', err);
     return;
