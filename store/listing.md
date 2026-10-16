@@ -36,7 +36,7 @@ Opening a .md file directly in Chrome also renders it. This needs "Allow access 
 - Remote code: no. The sandbox runs only the user's local HTML file, see above.
 - Privacy policy URL: https://github.com/patrick204nqh/doctree/blob/main/PRIVACY.md
 
-## Assets still to make
+## Assets
 
-- Screenshots, 1280x800 (1 to 5): a Markdown file with the tree, the JSON tree view, dark theme, quick open.
-- Small promo tile, 440x280 (crop from `brand/doctree-brand-kit.png`).
+- Screenshots, 1280x800: `docs/screenshots/markdown.png`, `mermaid.png`, `json.png`, `dark-outline.png`, `quick-open.png`.
+- Still to make: small promo tile, 440x280 (crop from `brand/doctree-brand-kit.png`).

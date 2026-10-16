@@ -1,0 +1,8 @@
+{
+  "orders": [
+    { "id": 1001, "customer": "Ada", "amount": 42.5, "paid": true, "items": [{ "sku": "A-1", "qty": 2 }, { "sku": "B-7", "qty": 1 }] },
+    { "id": 1002, "customer": "Linus", "amount": 19.0, "paid": false, "items": [{ "sku": "C-3", "qty": 1 }] },
+    { "id": 1003, "customer": "Grace", "amount": 88.0, "paid": true, "items": [{ "sku": "A-1", "qty": 4 }] }
+  ],
+  "meta": { "currency": "AUD", "generated": "2026-10-16", "source": null }
+}

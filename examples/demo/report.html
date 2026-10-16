@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weekly report</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 32px; color: #1c1c1c; }
+  h1 { margin: 0 0 4px; }
+  .cards { display: flex; gap: 16px; margin-top: 24px; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px 20px; min-width: 140px; }
+  .card b { display: block; font-size: 28px; }
+</style>
+</head>
+<body>
+  <h1>Weekly report</h1>
+  <p>An HTML file runs in a sandboxed frame: its scripts work, with no access to the extension or the folder.</p>
+  <div class="cards">
+    <div class="card"><b id="orders">0</b>orders</div>
+    <div class="card"><b>98.7%</b>on time</div>
+    <div class="card"><b>12 ms</b>p95 latency</div>
+  </div>
+  <script>
+    let n = 0;
+    const el = document.getElementById('orders');
+    const id = setInterval(() => { el.textContent = (n += 61); if (n >= 2440) clearInterval(id); }, 20);
+  </script>
+</body>
+</html>
