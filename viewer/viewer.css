@@ -415,6 +415,11 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #markdown-body li + li {
   margin-top: 0.25em;
 }
+/* A task item (- [ ] text) shows its checkbox instead of a bullet, flush with the text above */
+#markdown-body li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -2em;
+}
 
 /* ── Blockquote ───────────────────────────────────────────────────────────── */
 #markdown-body blockquote {
