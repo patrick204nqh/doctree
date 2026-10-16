@@ -3,6 +3,18 @@
  * Pure logic with no DOM or Chrome APIs, so `node --test` can run it.
  * Loaded as an ES module by the viewer and by import in tests.
  */
+
+/**
+ * DOMPurify options for rendered Markdown. Scripts, handlers and javascript: URLs go by default.
+ * This also drops <style> and <form> (a file could restyle or overlay the viewer) and allows
+ * file: and chrome-extension: links, which single-file mode writes for relative images and links.
+ */
+export const PURIFY_CONFIG = {
+  ADD_ATTR: ['target'],
+  FORBID_TAGS: ['style', 'form'],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|file|blob|chrome-extension):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+};
+
 /** Every shown extension → [label shown in the toolbar, highlight.js language or null]. */
 const FILE_TYPES = {
   md: ['Markdown', 'markdown'],

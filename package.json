@@ -8,6 +8,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test 'test/*.test.js'"
+    "test": "node --test 'test/*.test.js'",
+    "package": "rm -f doctree.zip && zip -r doctree.zip manifest.json background content viewer libs icons LICENSE THIRD_PARTY_NOTICES -x '*.DS_Store'"
   }
 }

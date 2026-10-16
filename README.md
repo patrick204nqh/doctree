@@ -61,6 +61,8 @@ Opening a `.md` file directly in Chrome also renders it. This needs **Allow acce
 
 `storage` (single-file mode) and `file://*`. No host access to websites: Doctree itself calls no site. Content you open can: Markdown that links to a remote image loads it, and an HTML file can load scripts, styles and images from the web inside its sandboxed frame.
 
+Rendered Markdown is sanitized with DOMPurify and Mermaid runs in strict mode. See [SECURITY.md](./SECURITY.md) and [PRIVACY.md](./PRIVACY.md) (no data collected).
+
 ## Develop
 
 `viewer/core.js` holds the pure logic (tree building, search, link resolution, file types, JSON and CSV parsing, front matter, heading ids, recent files, hash paths) with no DOM, so Node can test it: `npm test`. The rest of `viewer/` is plain ES modules with no build step, one per feature:
@@ -79,7 +81,7 @@ Opening a `.md` file directly in Chrome also renders it. This needs **Allow acce
 | `reader.js` | Navigation, Markdown, code, table and HTML rendering, reload on change |
 | `html-frame.html` | Sandboxed page that runs an opened HTML file (declared under `sandbox` in the manifest) |
 
-Check the DOM code by loading the extension unpacked.
+Check the DOM code by loading the extension unpacked. `npm run package` builds `doctree.zip` (the files the extension needs, no tests or brand assets) for the Chrome Web Store; the listing text and permission justifications are in [store/listing.md](./store/listing.md). See [CONTRIBUTING.md](./CONTRIBUTING.md) and [CHANGELOG.md](./CHANGELOG.md).
 
 ## License
 

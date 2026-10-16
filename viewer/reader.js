@@ -5,7 +5,7 @@
  */
 import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup } from './state.js';
 import {
-  isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr,
+  isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG,
   hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf,
 } from './core.js';
 import { flash } from './dom.js';
@@ -236,7 +236,7 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
   }
 
   const { fields, body } = splitFrontmatter(markdown);
-  bodyEl.innerHTML = marked.parse(body, { renderer, gfm: true, breaks: false });
+  bodyEl.innerHTML = DOMPurify.sanitize(marked.parse(body, { renderer, gfm: true, breaks: false }), PURIFY_CONFIG);
   if (fields.length) bodyEl.prepend(frontmatterCard(fields));
   buildToc();
 
@@ -259,7 +259,7 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
   mermaid.initialize({
     startOnLoad: false,
     theme: isDark() ? 'dark' : 'default',
-    securityLevel: 'loose',
+    securityLevel: 'strict',
   });
   await mermaid.run({ querySelector: '.mermaid' }).catch((err) => {
     console.error('[Doctree] mermaid:', err);
