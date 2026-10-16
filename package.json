@@ -1,5 +1,10 @@
 {
   "name": "doctree",
+  "version": "1.2.0",
+  "description": "A Chrome extension to read a local folder as a tree: Markdown, HTML, JSON, CSV and source files",
+  "author": "patrick204nqh",
+  "license": "MIT",
+  "repository": "github:patrick204nqh/doctree",
   "private": true,
   "type": "module",
   "scripts": {

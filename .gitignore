@@ -12,12 +12,5 @@ ehthumbs.db
 *.swo
 *~
 
-# Chrome Extension — do not commit the unpacked extension ID directory
-# (created by Chrome when loading unpacked)
-.cache/
-
-#
-CLAUDE.md
-memo*.txt
-
+# Local environment
 .envrc

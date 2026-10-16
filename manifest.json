@@ -3,6 +3,7 @@
   "name": "Doctree",
   "version": "1.2.0",
   "description": "Browse a local folder as a tree and read Markdown, HTML, JSON, CSV and source files in the browser",
+  "homepage_url": "https://github.com/patrick204nqh/doctree",
 
   "sandbox": {
     "pages": ["viewer/html-frame.html"]

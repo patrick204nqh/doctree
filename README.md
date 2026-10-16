@@ -2,8 +2,6 @@
 
 A Chrome extension to read a local folder in the browser: a sidebar tree on the left, the file on the right.
 
-Forked from [aktnk/chrome-markdown-viewer](https://github.com/aktnk/chrome-markdown-viewer) (MIT).
-
 ## What it reads
 
 | Type | **Preview** (default) |
@@ -85,4 +83,4 @@ Check the DOM code by loading the extension unpacked.
 
 ## License
 
-MIT. See [LICENSE](./LICENSE) and [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES).
+MIT. See [LICENSE](./LICENSE) and [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES). Started from [aktnk/chrome-markdown-viewer](https://github.com/aktnk/chrome-markdown-viewer) (MIT).
