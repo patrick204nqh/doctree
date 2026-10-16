@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Doctree",
+  "version": "1.2.0",
+  "description": "Browse a local folder as a tree and read Markdown, JSON and JSONL files in the browser",
+
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "file://*"
+  ],
+
+  "action": {
+    "default_title": "Doctree"
+  },
+
+  "background": {
+    "service_worker": "background/service_worker.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["file://*"],
+      "js": ["content/content_script.js"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
+
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "viewer/viewer.html",
+        "viewer/viewer.js",
+        "viewer/core.js",
+        "viewer/viewer.css",
+        "viewer/theme.js",
+        "libs/marked.min.js",
+        "libs/mermaid.min.js"
+      ],
+      "matches": ["file://*", "chrome-extension://*/*"]
+    }
+  ],
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

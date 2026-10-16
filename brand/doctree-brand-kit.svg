@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" role="img" aria-label="Doctree brand kit">
+  <defs>
+    <style>
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+      .sans { font-family: -apple-system, "Inter", "Helvetica Neue", Arial, sans-serif; }
+      .lbl  { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 10px; fill: #8A9199; letter-spacing: 1px; }
+    </style>
+    <g id="mk" fill="none" stroke-linecap="round" stroke-width="6">
+      <circle cx="28" cy="40" r="14" stroke="#ECE9E1"/>
+      <path d="M42 8V54M42 15H26" stroke="#ECE9E1"/>
+      <circle cx="19" cy="15" r="5.5" fill="#B8E65C" stroke="none"/>
+    </g>
+    <g id="mkd" fill="none" stroke-linecap="round" stroke-width="6">
+      <circle cx="28" cy="40" r="14" stroke="#0A0C0F"/>
+      <path d="M42 8V54M42 15H26" stroke="#0A0C0F"/>
+      <circle cx="19" cy="15" r="5.5" fill="#6E9A1F" stroke="none"/>
+    </g>
+    <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M16 0H0V16" fill="none" stroke="#ECE9E1" stroke-opacity=".06" stroke-width="1"/>
+    </pattern>
+    <pattern id="dotsL" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="3.5" cy="3.5" r="1.9" fill="#8A9199"/>
+    </pattern>
+    <pattern id="dotsS" width="5" height="5" patternUnits="userSpaceOnUse">
+      <circle cx="2.5" cy="2.5" r="1" fill="#8A9199"/>
+    </pattern>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12161B" stop-opacity="1"/>
+      <stop offset=".55" stop-color="#12161B" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="p8"><rect x="416" y="602" width="368" height="268" rx="14"/></clipPath>
+  </defs>
+
+  <rect width="1200" height="900" fill="#0A0C0F"/>
+
+  <!-- panel frames -->
+  <g fill="#12161B" stroke="#1E242B">
+    <rect x="30"  y="30"  width="368" height="268" rx="14"/>
+    <rect x="416" y="30"  width="368" height="268" rx="14"/>
+    <rect x="802" y="30"  width="368" height="268" rx="14"/>
+    <rect x="30"  y="316" width="368" height="268" rx="14"/>
+    <rect x="416" y="316" width="368" height="268" rx="14"/>
+    <rect x="802" y="316" width="368" height="268" rx="14"/>
+    <rect x="30"  y="602" width="368" height="268" rx="14"/>
+    <rect x="416" y="602" width="368" height="268" rx="14"/>
+    <rect x="802" y="602" width="368" height="268" rx="14"/>
+  </g>
+
+  <!-- 01 cover -->
+  <text class="lbl" x="48" y="54">01 / MARK</text>
+  <use href="#mk" transform="translate(146.8 65.6) scale(2.4)"/>
+  <text class="mono" x="214" y="250" text-anchor="middle" font-size="24" fill="#ECE9E1" letter-spacing="2">doctree</text>
+  <text class="lbl" x="48" y="282">BRAND KIT / V1</text>
+
+  <!-- 02 construction -->
+  <rect x="416" y="30" width="368" height="268" rx="14" fill="url(#grid)"/>
+  <text class="lbl" x="434" y="54">02 / CONSTRUCTION</text>
+  <use href="#mk" transform="translate(516 67) scale(3)"/>
+  <g fill="none" stroke="#B8E65C" stroke-width="1" stroke-dasharray="3 3" stroke-opacity=".8">
+    <circle cx="600" cy="187" r="42"/>
+    <path d="M642 84V236"/>
+    <path d="M556 112H660"/>
+  </g>
+  <g class="lbl">
+    <text x="530" y="204" text-anchor="end">BOWL = FILE</text>
+    <text x="672" y="92">TRUNK = FOLDER</text>
+    <text x="672" y="116">NODE = OPEN</text>
+  </g>
+
+  <!-- 03 browser -->
+  <text class="lbl" x="820" y="54">03 / SURFACE</text>
+  <rect x="820" y="68" width="332" height="212" rx="10" fill="#0A0C0F" stroke="#2A323B"/>
+  <path d="M820 78a10 10 0 0 1 10-10h312a10 10 0 0 1 10 10v18H820z" fill="#171C22"/>
+  <g fill="#2A323B"><circle cx="836" cy="82" r="3.5"/><circle cx="848" cy="82" r="3.5"/><circle cx="860" cy="82" r="3.5"/></g>
+  <rect x="880" y="74" width="180" height="16" rx="8" fill="#0A0C0F"/>
+  <text class="mono" x="970" y="85.5" text-anchor="middle" font-size="9" fill="#8A9199">doctree</text>
+  <line x1="820" y1="96" x2="1152" y2="96" stroke="#2A323B"/>
+  <line x1="920" y1="96" x2="920" y2="280" stroke="#2A323B"/>
+  <g class="mono" font-size="10" fill="#8A9199">
+    <text x="832" y="118" fill="#ECE9E1">▾ sub</text>
+    <text x="844" y="138">data.json</text>
+    <rect x="828" y="145" width="86" height="18" rx="4" fill="#B8E65C" fill-opacity=".14"/>
+    <text x="844" y="158" fill="#B8E65C">notes</text>
+    <text x="844" y="178">log.jsonl</text>
+    <text x="832" y="198" fill="#ECE9E1">index</text>
+  </g>
+  <rect x="940" y="114" width="110" height="10" rx="3" fill="#ECE9E1"/>
+  <g fill="#2A323B">
+    <rect x="940" y="140" width="190" height="6" rx="3"/>
+    <rect x="940" y="154" width="170" height="6" rx="3"/>
+    <rect x="940" y="168" width="180" height="6" rx="3"/>
+    <rect x="940" y="196" width="140" height="6" rx="3"/>
+    <rect x="940" y="210" width="160" height="6" rx="3"/>
+  </g>
+  <rect x="940" y="232" width="190" height="34" rx="6" fill="#171C22" stroke="#2A323B"/>
+  <path d="M952 244h18M952 254h12" stroke="#B8E65C" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- 04 tagline -->
+  <text class="lbl" x="48" y="340">04 / ESSENCE</text>
+  <text class="sans" x="48" y="450" font-size="44" font-weight="600" fill="#ECE9E1" letter-spacing="-1">Open the <tspan fill="#B8E65C">tree.</tspan></text>
+  <text class="sans" x="48" y="500" font-size="44" font-weight="600" fill="#8A9199" letter-spacing="-1">Read the file.</text>
+
+  <!-- 05 color -->
+  <text class="lbl" x="434" y="340">05 / COLOR</text>
+  <g>
+    <rect x="436" y="360" width="56" height="150" rx="8" fill="#0A0C0F" stroke="#2A323B"/>
+    <rect x="504" y="360" width="56" height="150" rx="8" fill="#12161B" stroke="#2A323B"/>
+    <rect x="572" y="360" width="56" height="150" rx="8" fill="#ECE9E1"/>
+    <rect x="640" y="360" width="56" height="150" rx="8" fill="#B8E65C"/>
+    <rect x="708" y="360" width="56" height="150" rx="8" fill="#8A9199"/>
+  </g>
+  <g class="lbl" font-size="9">
+    <text x="436" y="530">INK</text><text x="436" y="545">0A0C0F</text>
+    <text x="504" y="530">SLATE</text><text x="504" y="545">12161B</text>
+    <text x="572" y="530">BONE</text><text x="572" y="545">ECE9E1</text>
+    <text x="640" y="530">MOSS</text><text x="640" y="545">B8E65C</text>
+    <text x="708" y="530">FOG</text><text x="708" y="545">8A9199</text>
+  </g>
+
+  <!-- 06 type -->
+  <text class="lbl" x="820" y="340">06 / TYPE</text>
+  <text class="sans" x="822" y="450" font-size="104" font-weight="600" fill="#ECE9E1" letter-spacing="-4">Aa</text>
+  <text class="mono" x="1000" y="450" font-size="104" fill="#B8E65C" letter-spacing="-4">Aa</text>
+  <text class="lbl" x="822" y="490">SANS / READING</text>
+  <text class="lbl" x="1000" y="490">MONO / PATHS</text>
+  <text class="mono" x="822" y="540" font-size="13" fill="#8A9199">~/notes/2026/index.md</text>
+
+  <!-- 07 physical -->
+  <text class="lbl" x="48" y="626">07 / OBJECT</text>
+  <rect x="124" y="680" width="200" height="124" rx="6" fill="#000" fill-opacity=".45" transform="rotate(-6 214 736) translate(6 8)"/>
+  <g transform="rotate(-6 214 736)">
+    <rect x="114" y="674" width="200" height="124" rx="6" fill="#ECE9E1"/>
+    <rect x="114" y="674" width="52" height="14" rx="4" fill="#B8E65C"/>
+    <use href="#mkd" transform="translate(130 706) scale(1)"/>
+    <text class="mono" x="190" y="738" font-size="16" fill="#0A0C0F" letter-spacing="1">doctree</text>
+    <text class="mono" x="130" y="776" font-size="9" fill="#5B6168" letter-spacing="1">READ THE WHOLE FOLDER</text>
+  </g>
+
+  <!-- 08 image direction -->
+  <g clip-path="url(#p8)">
+    <path d="M416 780L480 735L540 765L610 705L690 750L784 715V870H416Z" fill="url(#dotsS)" fill-opacity=".7"/>
+    <path d="M416 830L500 785L570 820L650 775L730 815L784 795V870H416Z" fill="#0E1216"/>
+    <path d="M416 830L500 785L570 820L650 775L730 815L784 795V870H416Z" fill="url(#dotsL)" fill-opacity=".5"/>
+    <rect x="416" y="602" width="368" height="268" fill="url(#fade)"/>
+    <circle cx="690" cy="690" r="26" fill="#B8E65C"/>
+  </g>
+  <text class="lbl" x="434" y="626">08 / IMAGE</text>
+  <text class="lbl" x="434" y="646">HALFTONE DUSK / ONE MOSS SUN</text>
+
+  <!-- 09 system -->
+  <text class="lbl" x="820" y="626">09 / SYSTEM</text>
+  <g class="mono" font-size="12">
+    <rect x="822" y="650" width="52" height="26" rx="13" fill="none" stroke="#B8E65C"/>
+    <text x="848" y="667" text-anchor="middle" fill="#B8E65C">.md</text>
+    <rect x="884" y="650" width="62" height="26" rx="13" fill="none" stroke="#2A323B"/>
+    <text x="915" y="667" text-anchor="middle" fill="#ECE9E1">.json</text>
+    <rect x="956" y="650" width="68" height="26" rx="13" fill="none" stroke="#2A323B"/>
+    <text x="990" y="667" text-anchor="middle" fill="#ECE9E1">.jsonl</text>
+  </g>
+  <rect x="822" y="708" width="324" height="44" rx="10" fill="#0A0C0F" stroke="#2A323B"/>
+  <path d="M840 726h8l3 3h9v10h-20z" fill="none" stroke="#B8E65C" stroke-width="1.6" stroke-linejoin="round"/>
+  <text class="sans" x="876" y="735" font-size="14" fill="#ECE9E1">Open Folder</text>
+  <g fill="none" stroke="#8A9199" stroke-width="2" stroke-linecap="round">
+    <path d="M840 782V822M840 796H866M840 812H858"/>
+  </g>
+  <circle cx="870" cy="796" r="3.5" fill="#B8E65C"/>
+  <circle cx="862" cy="812" r="3.5" fill="#8A9199"/>
+  <text class="lbl" x="892" y="800">CHIP / BAR / TREE</text>
+</svg>
