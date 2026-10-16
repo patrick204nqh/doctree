@@ -34,6 +34,7 @@
         </button>
       </div>
       <span id="file-name"></span>
+      <nav id="crumbs" aria-label="Path" hidden></nav>
       <div id="copy-group" class="btn-group" hidden>
         <button id="copy-path-btn" class="btn" title="Copy the absolute path">Copy path</button>
         <button id="copy-menu-btn" class="btn caret" popovertarget="copy-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to copy the path" title="More ways to copy the path">
@@ -43,9 +44,13 @@
     </div>
     <div id="toolbar-right">
       <button id="quick-btn" class="btn" title="Jump to any file" hidden>Quick open <kbd></kbd></button>
-      <button id="toc-btn" class="btn" title="Outline of this file (o)" aria-controls="toc" aria-expanded="false" hidden>Outline</button>
-      <button id="width-btn" class="btn"></button>
-      <button id="theme-btn" class="btn"></button>
+      <button id="settings-btn" class="btn icon-btn" popovertarget="settings-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path d="M2 4.5h7M12.5 4.5H14M2 11.5h1.5M7 11.5h7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="10.75" cy="4.5" r="1.75" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <circle cx="5.25" cy="11.5" r="1.75" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -65,6 +70,29 @@
 
   <div id="folders-menu" class="menu" popover role="menu" aria-label="Recent folders"></div>
   <div id="copy-menu" class="menu" popover role="menu" aria-label="Copy path"></div>
+  <div id="crumb-menu" class="menu crumb-menu" popover="manual" role="menu" aria-label="Folder contents"></div>
+  <div id="settings-menu" class="menu" popover role="dialog" aria-label="Settings">
+    <div class="s-row" role="group" aria-labelledby="s-theme">
+      <span id="s-theme">Theme</span>
+      <span class="seg"><button type="button" data-pref="theme" data-value="light">Light</button><button type="button" data-pref="theme" data-value="dark">Dark</button></span>
+    </div>
+    <div class="s-row" role="group" aria-labelledby="s-width">
+      <span id="s-width">Reading width <kbd>w</kbd></span>
+      <span class="seg"><button type="button" data-pref="width" data-value="full">Full</button><button type="button" data-pref="width" data-value="contained">Contained</button></span>
+    </div>
+    <div class="s-row" role="group" aria-labelledby="s-crumbs">
+      <span id="s-crumbs">Breadcrumb</span>
+      <span class="seg"><button type="button" data-pref="crumbs" data-value="on">On</button><button type="button" data-pref="crumbs" data-value="off">Off</button></span>
+    </div>
+    <div class="s-row" role="group" aria-labelledby="s-outline">
+      <span id="s-outline">Outline <kbd>o</kbd></span>
+      <span class="seg"><button type="button" data-pref="outline" data-value="on">On</button><button type="button" data-pref="outline" data-value="off">Off</button></span>
+    </div>
+    <div class="s-row" role="group" aria-labelledby="s-tree">
+      <span id="s-tree">File tree <kbd>\</kbd></span>
+      <span class="seg"><button type="button" data-pref="tree" data-value="on">On</button><button type="button" data-pref="tree" data-value="off">Off</button></span>
+    </div>
+  </div>
 
   <dialog id="palette" aria-label="Quick open">
     <input id="palette-input" type="text" placeholder="Jump to a file" autocomplete="off" spellcheck="false"

@@ -31,9 +31,11 @@ The tree shows every name with its extension, folders in bold with a folder icon
 
 **Reading full width:** the button at the left of the toolbar (or the `\` key) hides the tree, and Doctree remembers the choice. **Quick open** (`Cmd K`, or `Ctrl K` outside macOS) searches every file by path, so you can jump anywhere with the tree hidden. With an empty search it lists the files you opened last.
 
-**Outline:** the Outline button (or the `o` key) shows the h1–h3 headings of the open file in a right-hand panel. Click a heading to jump to it. The current section is highlighted as you scroll. Doctree remembers whether it is shown.
+**Outline:** turn it on in Settings (or press `o`) to show the h1–h3 headings of the open file in a right-hand panel. Click a heading to jump to it. The current section is highlighted as you scroll.
 
-**Width:** text fills the whole window by default. The **Contain** button (or the `w` key) limits it to a 860px column; the button then reads **Full width** to switch back. Doctree remembers the choice.
+**Breadcrumb:** the toolbar shows the open file's path, `folder / folder / file`. Hover a folder (or focus it and press the down arrow) to list what it holds: the entry file, then subfolders, then files. Hover a subfolder (or press the right arrow) to open its list beside it, as deep as the folders go; the left arrow goes back. Folders with no file Doctree can show are not listed. Pick a file to open it. Pick a subfolder, or click a folder in the path, to open the first file in it (the entry file when it has one). Escape closes the lists.
+
+**Settings:** the sliders button at the right of the toolbar opens one panel for every saved preference: theme, reading width (`w`), breadcrumb, outline (`o`) and file tree (`\`). Each is a two-way switch, and Doctree remembers every choice. Reading width is **Full** by default; **Contained** limits text to an 860px column.
 
 Links between files work with Back and Forward, and the address bar `#path` is a deep link to the open file.
 
@@ -45,7 +47,7 @@ The filter box above the tree matches file paths, folder names included.
 
 **Refresh:** Chrome gives an extension no file-change events, so Doctree polls. The open file reloads within 2 seconds of a change. The tree rescans when you return to the tab, every 15 seconds while the tab is visible, and from the rescan button beside the folder name. A rescan redraws the tree only when a file was added, renamed or removed, and keeps your open folders, scroll position and filter. On a very large folder the interval stretches, so scanning stays cheap.
 
-The button on the right of the toolbar switches between light and dark. Doctree follows the system theme until you click it, then remembers your choice.
+The theme follows the system until you pick one in Settings.
 
 Opening a `.md` file directly in Chrome also renders it. This needs **Allow access to file URLs** on the extension card (Details). The folder tree does not need it.
 

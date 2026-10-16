@@ -792,3 +792,102 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #toc a.toc-h2 { padding-left: 26px; }
 #toc a.toc-h3 { padding-left: 38px; }
 #toc a.active { color: var(--link); font-weight: 600; }
+
+/* ── Breadcrumb (replaces the plain file name) ────────────────────────────── */
+#crumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+#crumbs[hidden] { display: none; }
+.crumb {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 4px;
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.crumb:hover { color: var(--fg); background: var(--sidebar-hover-bg); }
+.crumb:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.crumb-sep { flex: none; color: var(--muted); opacity: 0.6; }
+.crumb-cur { flex: none; color: var(--fg); font-weight: 600; }
+
+/* ── Settings panel ───────────────────────────────────────────────────────── */
+#settings-menu { min-width: 300px; padding: 6px; }
+.s-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
+.s-row kbd { margin-left: 6px; }
+.seg { display: inline-flex; }
+.seg button {
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.seg button + button { margin-left: -1px; }
+.seg button:first-child { border-radius: 6px 0 0 6px; }
+.seg button:last-child { border-radius: 0 6px 6px 0; }
+.seg button:hover { background: var(--sidebar-hover-bg); }
+.seg button[aria-pressed="true"] {
+  position: relative;
+  color: var(--sidebar-active-fg);
+  background: var(--sidebar-active-bg);
+  border-color: var(--link);
+  font-weight: 600;
+}
+
+/* ── Breadcrumb dropdown: what a folder holds ─────────────────────────────── */
+.crumb-menu {
+  min-width: 200px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+.crumb-menu [role="menuitem"] {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+}
+.crumb-menu .ico {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+.crumb-menu .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.crumb-menu [aria-current="true"],
+.crumb-menu [aria-current="true"] .ico {
+  color: var(--link);
+  font-weight: 600;
+}
+.crumb[aria-expanded="true"] { color: var(--fg); background: var(--sidebar-hover-bg); }
+.crumb-menu .more {
+  margin-left: auto;
+  padding-left: 12px;
+  color: var(--muted);
+}

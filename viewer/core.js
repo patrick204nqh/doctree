@@ -65,6 +65,26 @@ const DoctreeCore = (() => {
     return null;
   }
 
+  const inFolder = (f, folderPath) => f.path.length > folderPath.length && folderPath.every((p, i) => f.path[i] === p);
+
+  /** The first file under a folder in tree order (its entry file when it has one), or null. */
+  function firstFileIn(files, folderPath) {
+    return files.find((f) => inFolder(f, folderPath)) ?? null;
+  }
+
+  /** What a folder holds, as the tree lists it: entry file, then subfolders, then the other files. */
+  function folderItems(files, folderPath) {
+    const n = folderPath.length;
+    const dirs = new Map();
+    const here = [];
+    for (const f of files.filter((f) => inFolder(f, folderPath))) {
+      if (f.path.length === n + 1) here.push({ type: 'file', name: f.name, path: f.path });
+      else if (!dirs.has(f.path[n])) dirs.set(f.path[n], { type: 'dir', name: f.path[n], path: f.path.slice(0, n + 1) });
+    }
+    const index = findIndex(here);
+    return [...(index ? [index] : []), ...dirs.values(), ...here.filter((f) => f !== index)];
+  }
+
   /**
    * Read a directory handle into { name, type, path, children }.
    * Folders first (A–Z), then files (A–Z); the entry file leads. Dot-names and build dirs are skipped.
@@ -127,7 +147,7 @@ const DoctreeCore = (() => {
 
   return {
     SHOWN, LINK, splitFrontmatter, resolvePathArray, resolveUrl, escapeAttr,
-    findIndex, buildTree, flatten, searchFiles, headingIds,
+    findIndex, firstFileIn, folderItems, buildTree, flatten, searchFiles, headingIds,
   };
 })();
 

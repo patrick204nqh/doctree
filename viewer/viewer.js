@@ -19,7 +19,6 @@
   const copyMenu      = document.getElementById('copy-menu');
   const filterEl      = document.getElementById('filter');
   const copyPathBtn   = document.getElementById('copy-path-btn');
-  const themeBtn      = document.getElementById('theme-btn');
   const treeToggleBtn = document.getElementById('tree-toggle');
   const quickBtn      = document.getElementById('quick-btn');
   const mainEl        = document.getElementById('main');
@@ -28,8 +27,10 @@
   const paletteList   = document.getElementById('palette-list');
   const contentWrapper = document.getElementById('content-wrapper');
   const tocEl         = document.getElementById('toc');
-  const tocBtn        = document.getElementById('toc-btn');
-  const widthBtn      = document.getElementById('width-btn');
+  const crumbMenu     = document.getElementById('crumb-menu');
+  const crumbsEl      = document.getElementById('crumbs');
+  const settingsBtn   = document.getElementById('settings-btn');
+  const settingsMenu  = document.getElementById('settings-menu');
 
   /* ── State ────────────────────────────────────────────────────────────── */
   let rootHandle      = null;   // FileSystemDirectoryHandle (folder mode)
@@ -45,8 +46,9 @@
   let folders         = [];     // saved folders, most recently used first
   let tocHeads        = [];     // h1–h3 of the open file, in order
   let tocOn           = localStorage.getItem('doctree-toc') === 'on';
+  let crumbsOn        = localStorage.getItem('doctree-crumbs') !== 'off';
 
-  const { LINK, splitFrontmatter, resolvePathArray, resolveUrl, escapeAttr, findIndex, buildTree, flatten, searchFiles, headingIds } = DoctreeCore;
+  const { LINK, splitFrontmatter, resolvePathArray, resolveUrl, escapeAttr, findIndex, firstFileIn, folderItems, buildTree, flatten, searchFiles, headingIds } = DoctreeCore;
   const TEXT_CAP = 256 * 1024;                  // bytes shown before "Show all"
   const RECENT_MAX  = 8;
   const RESCAN_MS   = 15000;
@@ -116,16 +118,20 @@
   setupMenu(foldersMenu, foldersBtn, fillFoldersMenu);
   setupMenu(copyMenu, copyMenuBtn, fillCopyMenu);
 
-  function setupMenu(menu, button, fill) {
+  function setupMenu(menu, button, fill, anchor = button.parentElement) {
     menu.addEventListener('beforetoggle', (e) => {
       if (e.newState === 'open') fill();
     });
     menu.addEventListener('toggle', (e) => {
       button.setAttribute('aria-expanded', String(e.newState === 'open'));
       if (e.newState !== 'open') return;
-      placeMenu(menu, button.parentElement);
+      placeMenu(menu, anchor);
       (menu.querySelector('[autofocus]') ?? menu.querySelector('button:not([disabled])'))?.focus();
     });
+    menuArrows(menu);
+  }
+
+  function menuArrows(menu) {
     menu.addEventListener('keydown', (e) => {
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       e.preventDefault();
@@ -247,35 +253,247 @@
     }
   }, 2000);
 
-  /* ── Light / dark theme (theme.js sets the first value before paint) ─── */
-  showTheme();
-  themeBtn.addEventListener('click', () => {
-    document.documentElement.dataset.theme = isDark() ? 'light' : 'dark';
-    localStorage.setItem('doctree-theme', document.documentElement.dataset.theme);
-    showTheme();
-    if (currentHandle) reloadCurrent(); // redraws Mermaid in the new theme
+  /* ── Settings: one panel for every saved preference ──────────────────── */
+  // theme.js sets theme and width before first paint; each setter saves its choice.
+  const PREFS = {
+    theme:   { get: () => (isDark() ? 'dark' : 'light'), set: setTheme },
+    width:   { get: () => document.documentElement.dataset.width, set: setWidth },
+    crumbs:  { get: () => (crumbsOn ? 'on' : 'off'), set: (v) => setCrumbs(v === 'on') },
+    outline: { get: () => (tocOn ? 'on' : 'off'), set: (v) => setToc(v === 'on') },
+    tree:    { get: () => mainEl.dataset.tree, set: (v) => setTreeShown(v === 'on', true) },
+  };
+  setupMenu(settingsMenu, settingsBtn, showSettings, settingsBtn);
+  settingsMenu.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pref]');
+    if (b) PREFS[b.dataset.pref].set(b.dataset.value);
   });
 
-  function showTheme() {
-    themeBtn.textContent = isDark() ? 'Light' : 'Dark';
-    themeBtn.title = 'Switch to the ' + (isDark() ? 'light' : 'dark') + ' theme';
+  function showSettings() {
+    settingsMenu.querySelectorAll('[data-pref]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(PREFS[b.dataset.pref].get() === b.dataset.value));
+    });
   }
 
-  /* ── Reading width: full by default, or a contained column ───────────── */
-  showWidth();
-  widthBtn.addEventListener('click', toggleWidth);
-
-  function toggleWidth() {
-    const next = document.documentElement.dataset.width === 'full' ? 'contained' : 'full';
-    document.documentElement.dataset.width = next;
-    localStorage.setItem('doctree-width', next);
-    showWidth();
+  function setTheme(theme) {
+    if (theme === PREFS.theme.get()) return;
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('doctree-theme', theme);
+    showSettings();
+    if (currentHandle) reloadCurrent(); // redraws Mermaid in the new theme
   }
 
-  function showWidth() {
-    const full = document.documentElement.dataset.width === 'full';
-    widthBtn.textContent = full ? 'Contain' : 'Full width';
-    widthBtn.title = 'Switch to ' + (full ? 'a contained column' : 'full width') + ' (w)';
+  function setWidth(width) {
+    document.documentElement.dataset.width = width;
+    localStorage.setItem('doctree-width', width);
+    showSettings();
+  }
+
+  function setCrumbs(on) {
+    crumbsOn = on;
+    localStorage.setItem('doctree-crumbs', on ? 'on' : 'off');
+    renderCrumbs();
+    showSettings();
+  }
+
+  /* ── Breadcrumb: the open file's path. Hover a folder to list what is in it ─ */
+  let crumbTimer = 0;
+  let crumbFor = null; // the crumb the open menu belongs to
+  const later = (ms, fn) => { clearTimeout(crumbTimer); crumbTimer = setTimeout(fn, ms); };
+
+  crumbsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('.crumb');
+    if (!b) return;
+    hideCrumbMenu();
+    openFolderPath(crumbDir(b));
+  });
+  crumbsEl.addEventListener('mouseover', (e) => {
+    const b = e.target.closest('.crumb');
+    if (b) later(crumbMenu.matches(':popover-open') ? 0 : 150, () => showCrumbMenu(b));
+    else later(250, hideCrumbMenu);
+  });
+  crumbsEl.addEventListener('mouseleave', () => later(250, hideCrumbMenu));
+  crumbsEl.addEventListener('keydown', (e) => {
+    const b = e.target.closest('.crumb');
+    if (!b || e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    showCrumbMenu(b, true);
+  });
+  const crumbMenus = [crumbMenu]; // level 0 is in the page; each deeper level is a flyout made on demand
+  wireCrumbMenu(crumbMenu, 0);
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.crumb-menu, .crumb')) hideCrumbMenu();
+  });
+
+  function crumbDir(b) {
+    return currentPath.slice(0, Number(b.dataset.depth) + 1);
+  }
+
+  function wireCrumbMenu(menu, level) {
+    menu.addEventListener('mouseleave', () => later(250, hideCrumbMenu));
+    // mouseover fires before mouseenter, so the pointer entering the menu is handled here
+    menu.addEventListener('mouseover', (e) => {
+      const it = e.target.closest('[data-path]');
+      if (!it) return clearTimeout(crumbTimer);
+      if (it.dataset.type === 'dir') later(150, () => openFlyout(level, it));
+      else later(150, () => closeCrumbMenus(level + 1));
+    });
+    menu.addEventListener('click', (e) => {
+      const it = e.target.closest('[data-path]');
+      if (!it) return;
+      const path = JSON.parse(it.dataset.path);
+      hideCrumbMenu();
+      if (it.dataset.type === 'dir') openFolderPath(path);
+      else openPath(path, 'push');
+    });
+    menu.addEventListener('keydown', (e) => {
+      const it = e.target.closest('[data-path]');
+      if (e.key === 'Escape') {
+        const b = crumbFor;
+        hideCrumbMenu();
+        b?.focus();
+      } else if (e.key === 'ArrowRight' && it?.dataset.type === 'dir') {
+        e.preventDefault();
+        openFlyout(level, it, true);
+      } else if (e.key === 'ArrowLeft' && level > 0) {
+        e.preventDefault();
+        closeCrumbMenus(level);
+        menu.opener?.focus();
+      }
+    });
+    menuArrows(menu);
+  }
+
+  function crumbLevel(level) {
+    if (!crumbMenus[level]) {
+      const m = document.createElement('div');
+      m.className = 'menu crumb-menu';
+      m.setAttribute('popover', 'manual');
+      m.setAttribute('role', 'menu');
+      m.setAttribute('aria-label', 'Folder contents');
+      document.body.append(m);
+      wireCrumbMenu(m, level);
+      crumbMenus[level] = m;
+    }
+    return crumbMenus[level];
+  }
+
+  function crumbItem(it) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('role', 'menuitem');
+    btn.dataset.type = it.type;
+    btn.dataset.path = JSON.stringify(it.path);
+    if (it.path.every((p, i) => currentPath[i] === p)) btn.setAttribute('aria-current', 'true'); // on the way to the open file
+    btn.append(icon(it.type === 'dir' ? ICON_FOLDER : ICON_FILE), textSpan('name', it.name));
+    if (it.type === 'dir') {
+      btn.setAttribute('aria-haspopup', 'menu');
+      btn.append(textSpan('more', '›'));
+    }
+    return btn;
+  }
+
+  /** Fill and show one level with a folder's items; null when the folder has none. */
+  function showCrumbLevel(level, dir, opener) {
+    const items = folderItems(allFiles, dir);
+    if (!items.length) return null;
+    const menu = crumbLevel(level);
+    menu.opener = opener;
+    menu.replaceChildren(...items.map(crumbItem));
+    if (!menu.matches(':popover-open')) menu.showPopover();
+    closeCrumbMenus(level + 1);
+    return menu;
+  }
+
+  function showCrumbMenu(b, focusFirst) {
+    crumbFor = b;
+    const menu = showCrumbLevel(0, crumbDir(b), b);
+    if (!menu) return hideCrumbMenu();
+    placeMenu(menu, b);
+    crumbsEl.querySelectorAll('.crumb').forEach((c) => c.setAttribute('aria-expanded', String(c === b)));
+    if (focusFirst) menu.querySelector('button')?.focus();
+  }
+
+  /** Open a subfolder's list beside its row; it flips to the left edge when there is no room. */
+  function openFlyout(level, item, focusFirst) {
+    const open = crumbMenus[level + 1];
+    if (open?.opener === item && open.matches(':popover-open')) {
+      if (focusFirst) open.querySelector('button')?.focus();
+      return;
+    }
+    const menu = showCrumbLevel(level + 1, JSON.parse(item.dataset.path), item);
+    if (!menu) return;
+    const r = item.getBoundingClientRect();
+    const left = r.right + 2 + menu.offsetWidth > innerWidth - 8 ? r.left - menu.offsetWidth - 2 : r.right + 2;
+    menu.style.left = Math.max(8, left) + 'px';
+    menu.style.top = Math.max(8, Math.min(r.top - 5, innerHeight - menu.offsetHeight - 8)) + 'px';
+    if (focusFirst) menu.querySelector('button')?.focus();
+  }
+
+  function closeCrumbMenus(from) {
+    for (let i = from; i < crumbMenus.length; i++) {
+      if (crumbMenus[i].matches(':popover-open')) crumbMenus[i].hidePopover();
+    }
+  }
+
+  function hideCrumbMenu() {
+    clearTimeout(crumbTimer);
+    crumbFor = null;
+    closeCrumbMenus(0);
+    crumbsEl.querySelectorAll('.crumb').forEach((c) => c.setAttribute('aria-expanded', 'false'));
+  }
+
+  /** A folder opens its first file in tree order (the entry file when it has one). */
+  function openFolderPath(dir) {
+    const first = firstFileIn(allFiles, dir);
+    if (first && first.path.join('/') !== currentPath.join('/')) openPath(first.path, 'push');
+    else revealFolder(dir);
+  }
+
+  function renderCrumbs() {
+    hideCrumbMenu();
+    const show = crumbsOn && rootHandle !== null && currentPath.length > 0;
+    crumbsEl.hidden = !show;
+    fileNameEl.hidden = show;
+    if (!show) return;
+    const last = currentPath.length - 1;
+    const parts = [];
+    currentPath.forEach((name, i) => {
+      if (i) {
+        const sep = textSpan('crumb-sep', '/');
+        sep.setAttribute('aria-hidden', 'true');
+        parts.push(sep);
+      }
+      if (i === last) {
+        const cur = textSpan('crumb-cur', name);
+        cur.setAttribute('aria-current', 'page');
+        parts.push(cur);
+      } else {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'crumb';
+        b.setAttribute('aria-haspopup', 'menu');
+        b.setAttribute('aria-expanded', 'false');
+        b.dataset.depth = i;
+        b.title = 'Open ' + currentPath.slice(0, i + 1).join('/');
+        b.textContent = name;
+        parts.push(b);
+      }
+    });
+    crumbsEl.replaceChildren(...parts);
+  }
+
+  /** Expand a folder in the tree (showing the tree if hidden) and scroll to it. */
+  function revealFolder(dir) {
+    clearFilter();
+    setTreeShown(true);
+    const key = dir.join('/');
+    const d = [...treeEl.querySelectorAll('details')].find((x) => x.dataset.path === key);
+    if (!d) { // the root has no folder row
+      sidebar.scrollTop = 0;
+      return;
+    }
+    for (let x = d; x; x = x.parentElement.closest('details')) x.open = true;
+    d.scrollIntoView({ block: 'nearest' });
   }
 
   /* ── Tree visibility: toggle button and backslash key ────────────────── */
@@ -287,6 +505,7 @@
     mainEl.dataset.tree = shown ? 'on' : 'off';
     treeToggleBtn.setAttribute('aria-expanded', String(shown));
     if (save) localStorage.setItem('doctree-tree', shown ? 'on' : 'off');
+    showSettings();
   }
 
   function typing() {
@@ -304,7 +523,6 @@
   });
 
   /* ── Outline: h1–h3 of the open file, hidden until asked for ─────────── */
-  tocBtn.addEventListener('click', () => setToc(!tocOn));
   tocEl.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-i]');
     if (!a) return;
@@ -314,13 +532,14 @@
   contentWrapper.addEventListener('scroll', () => requestAnimationFrame(markToc), { passive: true });
   document.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey || typing()) return;
-    if (e.key === 'o' && tocHeads.length) setToc(!tocOn);
-    else if (e.key === 'w') toggleWidth();
+    if (e.key === 'o') setToc(!tocOn);
+    else if (e.key === 'w') setWidth(PREFS.width.get() === 'full' ? 'contained' : 'full');
   });
 
   function setToc(on) {
     tocOn = on;
     localStorage.setItem('doctree-toc', on ? 'on' : 'off');
+    showSettings();
     showToc();
   }
 
@@ -341,8 +560,6 @@
   }
 
   function showToc() {
-    tocBtn.hidden = !tocHeads.length;
-    tocBtn.setAttribute('aria-expanded', String(tocOn));
     tocEl.hidden = !(tocOn && tocHeads.length);
     markToc();
   }
@@ -599,6 +816,11 @@
   async function showRoot(rec) {
     currentFolder = rec;
     rootHandle = rec.handle;
+    currentHandle = null; // nothing is open in the new folder yet
+    currentPath = [];
+    copyGroup.hidden = true;
+    fileNameEl.textContent = '';
+    renderCrumbs();
     treeEl.innerHTML = '<span style="color:var(--muted);font-size:0.8em">Loading…</span>';
     setFolderUi(true);
 
@@ -838,6 +1060,7 @@
       currentPath = pathArr;
       copyGroup.hidden = false;
       setTitle(handle.name);
+      renderCrumbs();
       if (/\.md$/i.test(handle.name)) {
         await renderMarkdown(await file.text(), { mode: 'folder' });
         await resolveImages(pathArr);

@@ -120,3 +120,38 @@ test('LINK: matches supported files with optional query or hash, not web pages',
   assert.ok(!C.LINK.test('image.png'));
   assert.ok(!C.LINK.test('#top'));
 });
+
+const sample = () => C.buildTree(dir('r', [
+  file('README.md'), file('z.md'),
+  dir('a', [file('b.md'), dir('deep', [file('d.md')]), file('task.md')]),
+  dir('b', [file('x.md')]),
+  dir('c', [dir('sub', [file('s.md')]), file('late.md')]),
+]), ['r']).then(C.flatten);
+
+test('firstFileIn: the entry file when there is one, else the first file in tree order', async () => {
+  const flat = await sample();
+  assert.deepEqual(C.firstFileIn(flat, ['r']).path, ['r', 'README.md']);
+  assert.deepEqual(C.firstFileIn(flat, ['r', 'a']).path, ['r', 'a', 'task.md']);       // task.md is a's entry file
+  assert.deepEqual(C.firstFileIn(flat, ['r', 'b']).path, ['r', 'b', 'x.md']);
+  assert.deepEqual(C.firstFileIn(flat, ['r', 'c']).path, ['r', 'c', 'sub', 's.md']);   // no entry file: subfolders come first
+  assert.equal(C.firstFileIn(flat, ['r', 'nope']), null);
+});
+
+test('firstFileIn: a folder does not match a sibling that shares its name prefix', () => {
+  const files = [{ path: ['r', 'ab', 'x.md'] }];
+  assert.equal(C.firstFileIn(files, ['r', 'a']), null);
+});
+
+test('folderItems: entry file, then subfolders, then files, one level deep', async () => {
+  const flat = await sample();
+  assert.deepEqual(
+    C.folderItems(flat, ['r']).map((i) => i.type + ':' + i.name),
+    ['file:README.md', 'dir:a', 'dir:b', 'dir:c', 'file:z.md'],
+  );
+  assert.deepEqual(
+    C.folderItems(flat, ['r', 'a']).map((i) => i.type + ':' + i.name),
+    ['file:task.md', 'dir:deep', 'file:b.md'],
+  );
+  assert.deepEqual(C.folderItems(flat, ['r', 'a'])[1].path, ['r', 'a', 'deep']);
+  assert.deepEqual(C.folderItems(flat, ['r', 'nope']), []);
+});
