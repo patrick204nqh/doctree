@@ -6,7 +6,7 @@
 import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr,
-  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited,
+  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf,
 } from './core.js';
 import { flash } from './dom.js';
 import { buildToc } from './outline.js';
@@ -20,6 +20,7 @@ const FORMAT_CAP = 1024 * 1024; // largest file shown formatted (JSON, CSV); hig
 const RELOAD_CHECK_MS = 2000;
 let blobUrls = []; // object URLs to revoke on next file load
 let rawPath = null; // path of the file the reader switched to its raw text
+let removed = false; // the open file is gone from disk; its last copy stays on screen
 
 /* ── Navigation: links, history, deep links ─────────────────────────────── */
 bodyEl.addEventListener('click', (e) => {
@@ -81,7 +82,6 @@ async function navigateToHandle(rootDirHandle, pathArr) {
 }
 
 /* ── Reload the open file when it changes on disk ───────────────────────── */
-const stampOf = (file) => file.lastModified + ':' + file.size;
 
 export async function reloadCurrent() {
   const top = contentWrapper.scrollTop;
@@ -92,15 +92,20 @@ export async function reloadCurrent() {
 setInterval(async () => {
   if (document.hidden || !state.currentHandle) return;
   try {
-    if (stampOf(await state.currentHandle.getFile()) === state.currentStamp) return;
+    if (stampOf(await state.currentHandle.getFile()) === state.currentStamp && !removed) return;
     await reloadCurrent();
-  } catch {
-    // File removed or mid-write: keep what is on screen
+  } catch (err) {
+    // Gone: say so and keep the last copy. Any other error is a read mid-write: retry next tick
+    if (err.name !== 'NotFoundError' || removed) return;
+    removed = true;
+    fileMetaEl.textContent = 'Removed from disk · showing the last copy';
+    fileMetaEl.hidden = false;
   }
 }, RELOAD_CHECK_MS);
 
 /* ── Load a file ────────────────────────────────────────────────────────── */
 async function loadFileHandle(handle, pathArr) {
+  removed = false;
   revokeBlobUrls();
 
   try {

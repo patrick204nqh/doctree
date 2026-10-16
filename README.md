@@ -53,7 +53,7 @@ Links between files work with Back and Forward. A link to a folder (`flows/`) op
 
 The filter box above the tree matches file paths, folder names included.
 
-**Refresh:** Chrome gives an extension no file-change events, so Doctree polls. The open file reloads within 2 seconds of a change. The tree rescans when you return to the tab, every 15 seconds while the tab is visible, and from the rescan button beside the folder name. A rescan redraws the tree only when a file was added, renamed or removed, and keeps your open folders, scroll position and filter. On a very large folder the interval stretches, so scanning stays cheap.
+**Refresh:** Chrome gives an extension no file-change events, so Doctree polls. The open file reloads within 2 seconds of a change. If it is deleted or renamed, the last copy stays on screen with "Removed from disk" beside the name, and it reloads if the file comes back. The tree rescans when you return to the tab, every 15 seconds while the tab is visible, and from the rescan button beside the folder name. A rescan redraws the tree only when a file was added, renamed or removed, and keeps your open folders, scroll position and filter. On a very large folder the interval stretches, so scanning stays cheap.
 
 The theme follows the system until you pick one in Settings.
 

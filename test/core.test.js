@@ -234,3 +234,19 @@ test('parseDelimited: quotes, escaped quotes, line breaks in cells, CRLF, BOM, b
   assert.deepEqual(C.parseDelimited('a\tb\n\n1\t\n', '\t'), [['a', 'b'], ['1', '']]);
   assert.deepEqual(C.parseDelimited('', ','), []);
 });
+
+test('signature: changes when a file is added, renamed or removed, not when one is only edited', async () => {
+  const sig = async (...entries) => C.signature(C.flatten(await C.buildTree(dir('r', entries), ['r'])));
+  const base = await sig(file('a.md'), dir('d', [file('b.md')]));
+  assert.equal(await sig(file('a.md'), dir('d', [file('b.md')])), base);
+  assert.notEqual(await sig(file('a.md'), file('c.md'), dir('d', [file('b.md')])), base);
+  assert.notEqual(await sig(file('a.md'), dir('d', [file('b2.md')])), base);
+  assert.notEqual(await sig(file('a.md')), base);
+});
+
+test('stampOf: changes with modified time or size', () => {
+  const s = C.stampOf({ lastModified: 1000, size: 5 });
+  assert.notEqual(C.stampOf({ lastModified: 1001, size: 5 }), s);
+  assert.notEqual(C.stampOf({ lastModified: 1000, size: 6 }), s);
+  assert.equal(C.stampOf({ lastModified: 1000, size: 5 }), s);
+});

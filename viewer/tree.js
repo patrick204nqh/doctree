@@ -5,7 +5,7 @@
  */
 import { state, treeEl, sidebar, mainEl, resizeHandle } from './state.js';
 import { icon, textSpan, ICON_FOLDER, ICON_FILE } from './dom.js';
-import { buildTree, flatten, findIndex, splitName, EXT_LABEL } from './core.js';
+import { buildTree, flatten, signature, findIndex, splitName, EXT_LABEL } from './core.js';
 import { setTreeShown } from './settings.js';
 import { openPath } from './reader.js';
 
@@ -80,8 +80,6 @@ export function renderTree(rootNode) {
   treeEl.appendChild(head);
   treeEl.appendChild(buildUL(rootNode.children));
 }
-
-const signature = (files) => files.map((f) => f.rel).join('\n');
 
 function buildUL(children) {
   const ul = document.createElement('ul');

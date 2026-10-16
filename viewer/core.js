@@ -203,6 +203,12 @@ export function flatten(node, out = []) {
   return out;
 }
 
+/** Fingerprint of a file on disk: changes when the file is edited. */
+export const stampOf = (file) => file.lastModified + ':' + file.size;
+
+/** The shown files' paths as one string, to tell whether a rescan found a file added, renamed or removed. */
+export const signature = (files) => files.map((f) => f.rel).join('\n');
+
 /** All words must appear in the path; files whose name matches come first, then shorter paths. */
 export function searchFiles(files, query) {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
