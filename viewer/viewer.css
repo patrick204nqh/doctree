@@ -25,6 +25,10 @@
   --sidebar-hover-bg: #e2dfd4;
   --resize-handle-bg: #dcd8cc;
   --max-width: 860px;
+  --hl-keyword: #8a3b8f;
+  --hl-string: #3f6a08;
+  --hl-number: #9a4a06;
+  --hl-title: #1d5fa8;
 }
 
 :root[data-theme="dark"] {
@@ -41,6 +45,10 @@
   --sidebar-active-fg: #b8e65c;
   --sidebar-hover-bg: #1a2027;
   --resize-handle-bg: #232a31;
+  --hl-keyword: #d2a8ff;
+  --hl-string: #b8e65c;
+  --hl-number: #ffb86c;
+  --hl-title: #79b8ff;
 }
 
 html {
@@ -143,6 +151,14 @@ kbd {
 #file-name {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* What the open file is: "Ruby · 4.2 KB" */
+#file-meta {
+  flex-shrink: 0;
   white-space: nowrap;
   font-size: 0.85rem;
   color: var(--muted);
@@ -890,4 +906,67 @@ details:has(.tree-file.active) > .tree-dir .ico {
   margin-left: auto;
   padding-left: 12px;
   color: var(--muted);
+}
+
+/* ── Syntax highlighting (highlight.js classes) ───────────────────────────── */
+#markdown-body .hljs-keyword,
+#markdown-body .hljs-selector-tag,
+#markdown-body .hljs-doctag,
+#markdown-body .hljs-type { color: var(--hl-keyword); }
+#markdown-body .hljs-string,
+#markdown-body .hljs-regexp,
+#markdown-body .hljs-symbol,
+#markdown-body .hljs-addition { color: var(--hl-string); }
+#markdown-body .hljs-number,
+#markdown-body .hljs-literal,
+#markdown-body .hljs-built_in,
+#markdown-body .hljs-bullet { color: var(--hl-number); }
+#markdown-body .hljs-title,
+#markdown-body .hljs-section,
+#markdown-body .hljs-name,
+#markdown-body .hljs-attr,
+#markdown-body .hljs-attribute,
+#markdown-body .hljs-variable,
+#markdown-body .hljs-template-variable,
+#markdown-body .hljs-selector-id,
+#markdown-body .hljs-selector-class { color: var(--hl-title); }
+#markdown-body .hljs-comment,
+#markdown-body .hljs-quote { color: var(--muted); font-style: italic; }
+
+/* ── CSV and TSV table ────────────────────────────────────────────────────── */
+#markdown-body .table-wrap {
+  overflow: auto;
+  max-height: calc(100vh - 140px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+#markdown-body .table-wrap table {
+  width: auto;
+  min-width: 100%;
+  margin: 0;
+}
+#markdown-body .table-wrap th {
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+#markdown-body .table-wrap td {
+  max-width: 60ch;
+  vertical-align: top;
+}
+
+/* ── Rendered HTML file: the frame takes the whole reading area ───────────── */
+#content-wrapper.fill { overflow: hidden; }
+#content-wrapper.fill #content {
+  height: 100%;
+  max-width: none;
+  padding: 0;
+}
+#content-wrapper.fill #markdown-body { height: 100%; }
+.html-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff; /* a report without its own background expects white */
 }

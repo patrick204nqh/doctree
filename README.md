@@ -9,7 +9,13 @@ Forked from [aktnk/chrome-markdown-viewer](https://github.com/aktnk/chrome-markd
 | Type | Shown as |
 |------|----------|
 | `.md` | Rendered Markdown (GFM, Mermaid diagrams, relative images, links between files). A leading `key: value` front matter block shows as a row of chips |
-| `.json`, `.jsonl`, `.txt`, `.tsv`, `.csv`, `.html` | Plain text, exactly as in the file (`.html` is shown as source, never run). Files over 256 KB show the first 256 KB with a **Show all** button |
+| `.html` | Rendered in a sandboxed frame: scripts run, but with no access to the extension or the folder. Relative stylesheets, scripts and images load from the folder, and links to other files open in Doctree. The **Source** button shows the file text |
+| `.json`, `.jsonl` | Indented and highlighted. **Raw** shows the file as it is on disk. Files over 1 MB show as raw text |
+| `.csv`, `.tsv` | A table with a sticky header row. **Raw** shows the file text. Files over 1 MB show as raw text |
+| `.rb`, `.py`, `.js`, `.ts`, `.sh`, `.rs`, `.go`, `.sql`, `.css`, `.xml`, `.yml`, `.yaml`, `.toml` | Source with syntax highlighting |
+| `.txt`, `.log` | Plain text, exactly as in the file |
+
+Text files over 256 KB show the first 256 KB with a **Show all** button. The toolbar shows the file type and size (`Ruby · 4.2 KB`). Fenced code blocks in Markdown are highlighted too.
 
 Dotfiles, `node_modules` and folders with no supported file are hidden from the tree.
 
@@ -37,7 +43,7 @@ The tree shows every name with its extension, folders in bold with a folder icon
 
 **Settings:** the sliders button at the right of the toolbar opens one panel for every saved preference: theme, reading width (`w`), breadcrumb, outline (`o`) and file tree (`\`). Each is a two-way switch, and Doctree remembers every choice. Reading width is **Full** by default; **Contained** limits text to an 860px column.
 
-Links between files work with Back and Forward, and the address bar `#path` is a deep link to the open file.
+Links between files work with Back and Forward. A link to a folder (`flows/`) opens that folder's entry file, and `other.md#section` scrolls to the heading. The address bar `#path` is a deep link to the open file.
 
 **Recent folders:** the arrow beside **Open Folder** lists the last 8 folders you opened. Pick one to switch to it, or use the cross to forget it. Doctree reopens the most recent one after a Chrome restart, or shows a **Reopen** button if Chrome asks for read access again.
 
@@ -53,11 +59,11 @@ Opening a `.md` file directly in Chrome also renders it. This needs **Allow acce
 
 ## Permissions
 
-`storage` (single-file mode) and `file://*`. No host access to websites: it cannot call any site, though Markdown that links to a remote image still loads it.
+`storage` (single-file mode) and `file://*`. No host access to websites: Doctree itself calls no site. Content you open can: Markdown that links to a remote image loads it, and an HTML file can load scripts, styles and images from the web inside its sandboxed frame.
 
 ## Develop
 
-`viewer/core.js` holds the pure logic (tree building, search, link resolution, front matter, heading ids, recent files, hash paths) with no DOM, so Node can test it: `npm test`. The rest of `viewer/` is plain ES modules with no build step, one per feature:
+`viewer/core.js` holds the pure logic (tree building, search, link resolution, file types, JSON and CSV parsing, front matter, heading ids, recent files, hash paths) with no DOM, so Node can test it: `npm test`. The rest of `viewer/` is plain ES modules with no build step, one per feature:
 
 | File | Owns |
 |------|------|
@@ -70,7 +76,8 @@ Opening a `.md` file directly in Chrome also renders it. This needs **Allow acce
 | `crumbs.js` | Breadcrumb and its folder lists |
 | `palette.js` | Quick open and recent files |
 | `outline.js` | Outline panel |
-| `reader.js` | Navigation, Markdown and text rendering, reload on change |
+| `reader.js` | Navigation, Markdown, code, table and HTML rendering, reload on change |
+| `html-frame.html` | Sandboxed page that runs an opened HTML file (declared under `sandbox` in the manifest) |
 
 Check the DOM code by loading the extension unpacked.
 

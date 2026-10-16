@@ -7,6 +7,8 @@ const $ = (id) => document.getElementById(id);
 
 export const bodyEl         = $('markdown-body');
 export const fileNameEl     = $('file-name');
+export const fileMetaEl     = $('file-meta');
+export const viewBtn        = $('view-toggle');
 export const sidebar        = $('sidebar');
 export const treeEl         = $('tree');
 export const mainEl         = $('main');

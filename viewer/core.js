@@ -3,11 +3,73 @@
  * Pure logic with no DOM or Chrome APIs, so `node --test` can run it.
  * Loaded as an ES module by the viewer and by import in tests.
  */
-const EXTENSIONS = ['md', 'json', 'jsonl', 'txt', 'tsv', 'csv', 'html'];
+/** Every shown extension → [label shown in the toolbar, highlight.js language or null]. */
+const FILE_TYPES = {
+  md: ['Markdown', null],
+  json: ['JSON', 'json'], jsonl: ['JSON Lines', 'json'],
+  csv: ['CSV', null], tsv: ['TSV', null],
+  html: ['HTML', 'xml'], css: ['CSS', 'css'], xml: ['XML', 'xml'],
+  txt: ['Text', null], log: ['Log', null],
+  rb: ['Ruby', 'ruby'], py: ['Python', 'python'], js: ['JavaScript', 'javascript'], ts: ['TypeScript', 'typescript'],
+  sh: ['Shell', 'bash'], rs: ['Rust', 'rust'], go: ['Go', 'go'], sql: ['SQL', 'sql'],
+  yml: ['YAML', 'yaml'], yaml: ['YAML', 'yaml'], toml: ['TOML', 'ini'],
+};
+const EXTENSIONS = Object.keys(FILE_TYPES);
 const EXT_PATTERN = EXTENSIONS.join('|');
 export const SHOWN = new RegExp(`\\.(${EXT_PATTERN})$`, 'i');
-export const LINK = new RegExp(`\\.(${EXT_PATTERN})([#?].*)?$`, 'i');
+/** A link that stays inside the open folder: no scheme ("https:", "mailto:"), not "/abs", not "#top". */
+export const isRelativeLink = (href) => !/^([a-z][a-z\d+\-.]*:|\/|#)/i.test(href);
 export const EXT_LABEL = EXTENSIONS.map((e) => '.' + e).join(', ');
+
+/** "run.rb" → { ext: "rb", label: "Ruby", lang: "ruby" }. An unknown type reads as plain "Text". */
+export function fileInfo(name) {
+  const ext = splitName(name)[1].slice(1).toLowerCase();
+  const [label, lang] = Object.hasOwn(FILE_TYPES, ext) ? FILE_TYPES[ext] : ['Text', null];
+  return { ext, label, lang };
+}
+
+/** 900 → "900 B", 4300 → "4.2 KB", 3 MB → "3.0 MB". */
+export function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+/**
+ * JSON re-indented. For JSONL each record is indented and records are split by a blank line.
+ * Text that does not parse stays as it is.
+ */
+export function prettyJson(text, lines = false) {
+  const fmt = (s) => { try { return JSON.stringify(JSON.parse(s), null, 2); } catch { return s; } };
+  return lines ? text.split(/\r?\n/).filter((l) => l.trim()).map(fmt).join('\n\n') : fmt(text);
+}
+
+/** CSV or TSV text → rows of cells. Handles "quoted, cells", "" escapes and line breaks inside quotes. */
+export function parseDelimited(text, delim) {
+  const s = text.replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [], cell = '', quoted = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quoted) {
+      if (c !== '"') cell += c;
+      else if (s[i + 1] === '"') { cell += '"'; i++; }
+      else quoted = false;
+    } else if (c === '"' && cell === '') {
+      quoted = true;
+    } else if (c === delim) {
+      row.push(cell); cell = '';
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && s[i + 1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else {
+      cell += c;
+    }
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.length > 1 || r[0] !== '');
+}
+
 const FM_SKIP = new Set(['schema', 'key']);                // front matter keys not worth a chip
 const INDEX_NAMES = ['index.md', 'readme.md', 'task.md'];  // a folder's entry file, first match wins
 const IGNORED_DIRS = new Set(['node_modules', '__pycache__']);
@@ -78,6 +140,18 @@ const inFolder = (f, folderPath) => f.path.length > folderPath.length && folderP
 /** The first file under a folder in tree order (its entry file when it has one), or null. */
 export function firstFileIn(files, folderPath) {
   return files.find((f) => inFolder(f, folderPath)) ?? null;
+}
+
+/**
+ * Where a relative link points in the open folder: { path, anchor } or null when nothing is there.
+ * A folder link opens its first file (the entry file when it has one); "a.md#sec" keeps "sec".
+ */
+export function resolveLink(files, basePath, href) {
+  const path = resolvePathArray(basePath, href);
+  const same = (p) => p.length === path.length && p.every((s, i) => s === path[i]);
+  const hit = files.find((f) => same(f.path)) ?? firstFileIn(files, path);
+  const hash = href.includes('#') ? href.slice(href.indexOf('#') + 1) : '';
+  return hit ? { path: hit.path, anchor: safeDecode(hash) } : null;
 }
 
 /** What a folder holds, as the tree lists it. */

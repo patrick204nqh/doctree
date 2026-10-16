@@ -114,11 +114,13 @@ test('escapeAttr: escapes quotes and angle brackets; tolerates null', () => {
   assert.equal(C.escapeAttr(undefined), '');
 });
 
-test('LINK: matches supported files with optional query or hash, not web pages', () => {
-  assert.ok(C.LINK.test('a/b.md#sec'));
-  assert.ok(C.LINK.test('data.JSONL?x=1'));
-  assert.ok(!C.LINK.test('image.png'));
-  assert.ok(!C.LINK.test('#top'));
+test('isRelativeLink: folder links count, schemes, absolute paths and #anchors do not', () => {
+  assert.ok(C.isRelativeLink('flows/'));
+  assert.ok(C.isRelativeLink('../a/b.md#sec'));
+  assert.ok(!C.isRelativeLink('https://x.dev'));
+  assert.ok(!C.isRelativeLink('mailto:a@b.c'));
+  assert.ok(!C.isRelativeLink('/abs/a.md'));
+  assert.ok(!C.isRelativeLink('#top'));
 });
 
 const sample = () => C.buildTree(dir('r', [
@@ -127,6 +129,17 @@ const sample = () => C.buildTree(dir('r', [
   dir('b', [file('x.md')]),
   dir('c', [dir('sub', [file('s.md')]), file('late.md')]),
 ]), ['r']).then(C.flatten);
+
+test('resolveLink: file, folder (entry file), anchor, and links that point at nothing', async () => {
+  const flat = await sample();
+  const from = ['r', 'a', 'b.md'];
+  assert.deepEqual(C.resolveLink(flat, from, 'task.md'), { path: ['r', 'a', 'task.md'], anchor: '' });
+  assert.deepEqual(C.resolveLink(flat, from, '../b/'), { path: ['r', 'b', 'x.md'], anchor: '' });
+  assert.deepEqual(C.resolveLink(flat, from, 'deep'), { path: ['r', 'a', 'deep', 'd.md'], anchor: '' });
+  assert.deepEqual(C.resolveLink(flat, from, '../z.md#My%20Part'), { path: ['r', 'z.md'], anchor: 'My Part' });
+  assert.equal(C.resolveLink(flat, from, 'missing/'), null);
+  assert.equal(C.resolveLink(flat, from, 'pic.png'), null);
+});
 
 test('firstFileIn: the entry file when there is one, else the first file in tree order', async () => {
   const flat = await sample();
@@ -185,4 +198,38 @@ test('splitName: a dotfile or a name with no dot keeps its whole name', () => {
   assert.deepEqual(C.splitName('notes.v2.md'), ['notes.v2', '.md']);
   assert.deepEqual(C.splitName('.env'), ['.env', '']);
   assert.deepEqual(C.splitName('LICENSE'), ['LICENSE', '']);
+});
+
+test('fileInfo: label and highlight language by extension, plain Text for the rest', () => {
+  assert.deepEqual(C.fileInfo('run.RB'), { ext: 'rb', label: 'Ruby', lang: 'ruby' });
+  assert.deepEqual(C.fileInfo('a.yml'), { ext: 'yml', label: 'YAML', lang: 'yaml' });
+  assert.deepEqual(C.fileInfo('notes.txt'), { ext: 'txt', label: 'Text', lang: null });
+  assert.deepEqual(C.fileInfo('x.constructor'), { ext: 'constructor', label: 'Text', lang: null });
+  assert.deepEqual(C.fileInfo('Makefile'), { ext: '', label: 'Text', lang: null });
+});
+
+test('SHOWN: scripts and config files are listed, images are not', () => {
+  for (const n of ['a.rb', 'a.py', 'a.sh', 'a.yaml', 'a.toml', 'a.HTML']) assert.ok(C.SHOWN.test(n), n);
+  assert.ok(!C.SHOWN.test('a.png'));
+});
+
+test('formatSize: bytes, KB, MB', () => {
+  assert.equal(C.formatSize(900), '900 B');
+  assert.equal(C.formatSize(4300), '4.2 KB');
+  assert.equal(C.formatSize(3 * 1024 * 1024), '3.0 MB');
+});
+
+test('prettyJson: indents JSON, indents each JSONL record, leaves broken text alone', () => {
+  assert.equal(C.prettyJson('{"a":[1,2]}'), '{\n  "a": [\n    1,\n    2\n  ]\n}');
+  assert.equal(C.prettyJson('{"a":1}\n\n{"b":2}\n', true), '{\n  "a": 1\n}\n\n{\n  "b": 2\n}');
+  assert.equal(C.prettyJson('{"a":1} trailing'), '{"a":1} trailing');
+  assert.equal(C.prettyJson('{"a":1}\nnot json', true), '{\n  "a": 1\n}\n\nnot json');
+});
+
+test('parseDelimited: quotes, escaped quotes, line breaks in cells, CRLF, BOM, blank lines', () => {
+  assert.deepEqual(C.parseDelimited('a,b\n1,2\n', ','), [['a', 'b'], ['1', '2']]);
+  assert.deepEqual(C.parseDelimited('\uFEFFname,note\r\n"Smith, J","say ""hi"""\r\n', ','), [['name', 'note'], ['Smith, J', 'say "hi"']]);
+  assert.deepEqual(C.parseDelimited('a,b\n"line1\nline2",x', ','), [['a', 'b'], ['line1\nline2', 'x']]);
+  assert.deepEqual(C.parseDelimited('a\tb\n\n1\t\n', '\t'), [['a', 'b'], ['1', '']]);
+  assert.deepEqual(C.parseDelimited('', ','), []);
 });

@@ -35,6 +35,7 @@
       </div>
       <span id="file-name"></span>
       <nav id="crumbs" aria-label="Path" hidden></nav>
+      <span id="file-meta" hidden></span>
       <div id="copy-group" class="btn-group" hidden>
         <button id="copy-path-btn" class="btn" title="Copy the absolute path">Copy path</button>
         <button id="copy-menu-btn" class="btn caret" popovertarget="copy-menu" aria-haspopup="menu" aria-expanded="false" aria-label="More ways to copy the path" title="More ways to copy the path">
@@ -43,6 +44,7 @@
       </div>
     </div>
     <div id="toolbar-right">
+      <button id="view-toggle" class="btn" hidden></button>
       <button id="quick-btn" class="btn" title="Jump to any file" hidden>Quick open <kbd></kbd></button>
       <button id="settings-btn" class="btn icon-btn" popovertarget="settings-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Settings" title="Settings">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -101,6 +103,7 @@
   </dialog>
 
   <script src="../libs/marked.min.js"></script>
+  <script src="../libs/highlight.min.js"></script>
   <script src="../libs/mermaid.min.js"></script>
   <script type="module" src="viewer.js"></script>
 </body>

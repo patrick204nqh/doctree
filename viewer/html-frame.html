@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!--
+  Sandboxed page (manifest "sandbox"). It runs in a unique origin: no extension APIs, no folder access.
+  reader.js posts the opened HTML file here as a string and this page writes it into itself.
+-->
+<script>
+// A sandboxed page has no storage: touching localStorage throws. Written pages get an in-memory one
+// (it lasts until the file is opened again), so a theme switch or a saved filter does not break the report.
+for (const name of ['localStorage', 'sessionStorage']) {
+  const data = new Map();
+  Object.defineProperty(window, name, {
+    configurable: true,
+    value: {
+      getItem: (k) => data.get(String(k)) ?? null,
+      setItem: (k, v) => { data.set(String(k), String(v)); },
+      removeItem: (k) => { data.delete(String(k)); },
+      clear: () => data.clear(),
+      key: (i) => [...data.keys()][i] ?? null,
+      get length() { return data.size; },
+    },
+  });
+}
+
+// Runs inside the written page: "#section" links scroll, web links open a tab,
+// every other link is handed to reader.js to open in the folder.
+function interceptLinks() {
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    const href = a && a.getAttribute('href');
+    if (!href || href.startsWith('#')) return;
+    e.preventDefault();
+    if (/^https?:/i.test(href)) window.open(href, '_blank', 'noopener');
+    else parent.postMessage({ link: href }, '*');
+  }, true);
+}
+
+addEventListener('message', (e) => {
+  if (e.source !== parent || typeof e.data !== 'string') return;
+  document.open();
+  document.write(e.data + '<script>(' + interceptLinks + ')()<\/script>');
+  document.close();
+});
+</script>
