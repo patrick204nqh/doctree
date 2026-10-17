@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 — 2026-10-17
 
+- Published on the Chrome Web Store.
 - Images: `.svg`, `.png`, `.jpg`, `.jpeg`, `.gif` and `.webp` files are listed in the tree and shown as pictures. SVG keeps a Raw view.
 - Quotes: a Markdown blockquote gets the same hover Copy button as a code block, and copies its text without the `>` markers.
 - Trusted sites: hovering a GitHub, Wikipedia, YouTube, Vimeo or Loom link shows a card, and a video link on its own line becomes a thumbnail card. The list is editable in Settings. Doctree now makes requests for these links only; see `PRIVACY.md`.

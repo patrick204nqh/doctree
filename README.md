@@ -14,6 +14,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/manifest-v3-4285F4.svg" alt="Manifest V3">
   <img src="https://img.shields.io/badge/chrome-102%2B-brightgreen.svg" alt="Chrome 102+">
+  <a href="https://chromewebstore.google.com/detail/doctree/ppdnpfcndaedmhojnjgfhjpbealkacap"><img src="https://img.shields.io/badge/Chrome_Web_Store-available-4caf50.svg" alt="Available on Chrome Web Store"></a>
 </p>
 
 <p align="center">
@@ -45,7 +46,9 @@
 
 ## Install
 
-Doctree is not on the Chrome Web Store yet. Load it unpacked:
+<a href="https://chromewebstore.google.com/detail/doctree/ppdnpfcndaedmhojnjgfhjpbealkacap"><img src="https://img.shields.io/badge/Get_it_from_the_Chrome_Web_Store-4caf50.svg" alt="Get it from the Chrome Web Store"></a>
+
+Or load it unpacked:
 
 1. Clone this repository.
 2. Open `chrome://extensions/` and turn on **Developer mode**.
