@@ -4,8 +4,8 @@
  * public API, and a video link alone on its line becomes a thumbnail card. Each is a request to that site, made
  * because the reader opened a file with such a link or hovered one; nothing else goes out.
  */
-import { bodyEl, pref } from './state.js';
-import { DEFAULT_SITES, parseSites, previewFor, cardText } from './core.js';
+import { bodyEl, pref, state } from './state.js';
+import { DEFAULT_SITES, parseSites, previewFor, cardText, resolveLink, fileInfo } from './core.js';
 
 export const getSites = () => {
   const saved = pref.get('sites');
@@ -18,14 +18,23 @@ export function setSites(text) {
   else pref.set('sites', sites.join('\n'));
 }
 
-/** Mark the trusted links under root: a label after each, card data for hovering, a thumbnail card for a video link alone in its paragraph. */
+/** Mark the trusted links under root: a label after each, card data for hovering, a thumbnail card for a video link alone in its paragraph. A link to a file in the open folder gets a card from the folder's file list. */
 export function decorateLinks(root) {
+  for (const a of root.querySelectorAll('a[data-md-link]')) {
+    const href = a.dataset.mdLink;
+    const hit = resolveLink(state.allFiles, state.currentPath, href);
+    const name = hit?.path.at(-1);
+    a.dataset.info = JSON.stringify(hit
+      ? { title: name, text: hit.path.slice(1).join('/'), meta: `${fileInfo(name).label} · in this folder` }
+      : { title: href, text: '', meta: 'Not found in this folder' });
+  }
   const sites = getSites();
   for (const a of root.querySelectorAll('a[href^="http"]')) {
     const p = previewFor(a.getAttribute('href'), sites);
     if (!p) continue;
     a.classList.add('trusted');
     a.dataset.site = p.site;
+    if (p.info) a.dataset.info = JSON.stringify(p.info);
     if (!p.card) continue;
     a.dataset.card = p.card.url;
     a.dataset.kind = p.card.kind;
@@ -61,16 +70,17 @@ const TEXT_MAX = 280;
 const cache = new Map(); // API url → { title, text, meta }, or null when the request failed (not retried: GitHub allows 60 a hour)
 let cardEl = null;
 let timer = 0;
+const CARD_LINK = 'a[data-card], a[data-info]';
 
 for (const [on, off] of [['mouseover', 'mouseout'], ['focusin', 'focusout']]) {
   bodyEl.addEventListener(on, (e) => {
-    const a = e.target.closest('a[data-card]');
+    const a = e.target.closest(CARD_LINK);
     if (!a) return;
     clearTimeout(timer);
     timer = setTimeout(() => showCard(a), HOVER_MS);
   });
   bodyEl.addEventListener(off, (e) => {
-    if (!e.target.closest('a[data-card]')) return;
+    if (!e.target.closest(CARD_LINK)) return;
     clearTimeout(timer);
     hideCard();
   });
@@ -78,6 +88,7 @@ for (const [on, off] of [['mouseover', 'mouseout'], ['focusin', 'focusout']]) {
 document.addEventListener('scroll', hideCard, true);
 
 async function cardFor(a) {
+  if (a.dataset.info) return JSON.parse(a.dataset.info); // read from the link itself: nothing to fetch
   const url = a.dataset.card;
   if (!cache.has(url)) {
     try {

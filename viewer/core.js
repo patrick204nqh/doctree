@@ -282,7 +282,10 @@ export function splitName(name) {
 /* ── Trusted sites: embeds and hover cards for links ──────────────────────── */
 
 /** A site also covers its subdomains: "wikipedia.org" covers "en.wikipedia.org". */
-export const DEFAULT_SITES = ['youtube.com', 'youtu.be', 'vimeo.com', 'loom.com', 'github.com', 'wikipedia.org'];
+export const DEFAULT_SITES = [
+  'youtube.com', 'youtu.be', 'vimeo.com', 'loom.com', 'github.com', 'wikipedia.org',
+  'atlassian.net', 'aws.amazon.com', 'datadoghq.com', 'datadoghq.eu', 'slack.com',
+];
 
 /** "https://www.GitHub.com/a, youtube.com" → ["github.com", "youtube.com"]: hosts only, one per entry. */
 export const parseSites = (text) => [...new Set(
@@ -294,7 +297,8 @@ const SEG = /^[\w.-]+$/;
 /**
  * How a link to a trusted site previews, or null when the site is not trusted:
  * { site, card: { url, kind } } a public JSON API to read a hover card from (video: true for a video link, which can also
- * stand alone on its line as a thumbnail card), or { site } a trusted site with nothing to preview.
+ * stand alone on its line as a thumbnail card), { site, info } a card read from the link itself (Jira, Confluence, AWS, Datadog
+ * and Slack need a login, so no request is made), or { site } a trusted site with nothing to preview.
  */
 export function previewFor(href, sites) {
   let u;
@@ -329,7 +333,56 @@ export function previewFor(href, sites) {
   if (/^[a-z-]+\.wikipedia\.org$/.test(host) && seg[0] === 'wiki' && seg[1]) {
     return { site, card: { url: `https://${host}/api/rest_v1/page/summary/${seg[1]}`, kind: 'wikipedia' } };
   }
-  return { site };
+  const info = linkInfo(host, u, seg);
+  return info ? { site, info } : { site };
+}
+
+const dec = (s) => { try { return decodeURIComponent(s.replace(/\+/g, ' ')); } catch { return s; } };
+const ISSUE_KEY = /^[A-Z][A-Z0-9]+-\d+$/;
+const PROJECT_KEY = /^[A-Z][A-Z0-9]+$/;
+
+/** A hover card for a link into a login-only tool, built from the URL alone: { title, text, meta } or null. */
+function linkInfo(host, u, seg) {
+  const q = (k) => u.searchParams.get(k);
+  const card = (title, text, meta) => ({ title, text: text ?? '', meta });
+
+  if (host.endsWith('.atlassian.net')) {
+    if (seg[0] === 'wiki') {
+      if (seg[1] !== 'spaces' || !seg[2]) return null;
+      const meta = `Confluence · space ${dec(seg[2])}`;
+      if (seg[3] === 'pages') return card(seg[5] ? dec(seg[5]) : 'Confluence page', '', meta);
+      return card(`Space ${dec(seg[2])}`, '', `Confluence · ${host}`);
+    }
+    const key = seg[0] === 'browse' ? seg[1] : q('selectedIssue');
+    if (key && ISSUE_KEY.test(key)) return card(key, '', `Jira · ${host}`);
+    const project = seg[seg.indexOf('projects') + 1];
+    if (seg.includes('projects') && PROJECT_KEY.test(project ?? '')) return card(`Project ${project}`, '', `Jira · ${host}`);
+    return null;
+  }
+
+  if (host.endsWith('console.aws.amazon.com')) {
+    const region = host.split('.')[0] !== 'console' ? host.split('.')[0] : q('region');
+    const service = seg[0] ?? 'console';
+    return card(`AWS ${service}`, dec(u.hash.slice(1)), ['AWS console', region].filter(Boolean).join(' · '));
+  }
+
+  if (host.endsWith('.datadoghq.com') || host.endsWith('.datadoghq.eu') || host === 'datadoghq.com' || host === 'datadoghq.eu') {
+    if (!seg[0]) return null;
+    const title = `${seg[0][0].toUpperCase()}${seg[0].slice(1)}${seg[1] ? ` ${dec(seg[1])}` : ''}`;
+    return card(title, q('query') ?? '', `Datadog · ${host}`);
+  }
+
+  if (host.endsWith('slack.com')) {
+    const space = host.split('.')[0];
+    if (seg[0] === 'archives' && seg[1]) {
+      const ts = /^p(\d{10})\d{6}$/.exec(seg[2] ?? '')?.[1] ?? /^(\d{10})\./.exec(q('thread_ts') ?? '')?.[1];
+      const when = ts ? `${new Date(ts * 1000).toISOString().slice(0, 16).replace('T', ' ')} UTC` : '';
+      const title = q('thread_ts') ? 'Slack thread' : seg[2] ? 'Slack message' : 'Slack channel';
+      return card(title, `Channel ${seg[1]}${when ? ` · ${when}` : ''}`, `Slack · ${space}`);
+    }
+    if (seg[0] === 'client' && seg[2]) return card('Slack channel', `Channel ${seg[2]}`, `Slack · workspace ${seg[1]}`);
+  }
+  return null;
 }
 
 /** The JSON a card API returned → { title, text, meta } as plain strings (shown with textContent, never as HTML); a video adds its https thumbnail URL as image. */

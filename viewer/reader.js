@@ -343,11 +343,56 @@ function wrapCode(pre) {
   return wrap;
 }
 
+/** A link to a file in the open folder → its file:// URL, or its path from the folder root when the folder's location on disk is not set. Null when nothing is there. */
+function diskLink(href) {
+  const hit = resolveLink(state.allFiles, state.currentPath, href);
+  if (!hit) return null;
+  const rel = hit.path.slice(1).join('/');
+  const base = state.currentFolder?.base;
+  return (base ? 'file://' + encodeURI(`${base}/${rel}`) : rel) + (hit.anchor ? '#' + hit.anchor : '');
+}
+
+/**
+ * What a block's Copy button puts on the clipboard. Plain text keeps each link as [text](url) and text/html keeps it as a real
+ * link (Slack, Confluence and Gmail paste that as a hyperlink); a block with no link copies as plain text only.
+ */
+function blockClip(block) {
+  if (!block.querySelector('a[href]')) return { text: block.innerText.replace(/\n$/, '') };
+  const copy = block.cloneNode(true);
+  for (const a of copy.querySelectorAll('a[href]')) {
+    const md = a.dataset.mdLink;
+    const href = (md != null && isRelativeLink(md) && diskLink(md)) || md || a.getAttribute('href');
+    const label = a.matches('.video-card') ? '' : a.textContent.trim(); // a video card's text is its title and channel, not the link's
+    const plain = document.createElement('a');
+    plain.href = href;
+    plain.textContent = label || href;
+    a.replaceWith(plain);
+  }
+  const html = copy.innerHTML;
+  for (const a of copy.querySelectorAll('a')) a.replaceWith(a.textContent === a.getAttribute('href') ? a.textContent : `[${a.textContent}](${a.getAttribute('href')})`);
+  // innerText needs a rendered element to keep paragraph breaks; keep the clone off screen
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-99999px;top:0;width:600px';
+  host.append(copy);
+  document.body.append(host);
+  const text = copy.innerText.replace(/\n$/, '');
+  host.remove();
+  return { text, html };
+}
+
 bodyEl.addEventListener('click', async (e) => {
   const btn = e.target.closest('.code-copy');
   if (!btn) return;
   try {
-    await navigator.clipboard.writeText(btn.previousElementSibling.innerText.replace(/\n$/, '')); // innerText keeps a quote's paragraph breaks
+    const { text, html } = blockClip(btn.previousElementSibling);
+    if (html) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+        'text/html': new Blob([html], { type: 'text/html' }),
+      })]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
   } catch (err) {
     console.warn('[Doctree] copy failed:', err);
     return;

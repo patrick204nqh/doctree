@@ -276,6 +276,24 @@ test('previewFor: video, GitHub and Wikipedia links get a card API, unknown site
   assert.equal(C.previewFor('javascript:alert(1)', S), null);
 });
 
+test('previewFor: Jira, Confluence, AWS, Datadog and Slack links preview from the URL alone', () => {
+  const S = C.DEFAULT_SITES;
+  const info = (h) => C.previewFor(h, S).info;
+  assert.equal(C.previewFor('https://envato.atlassian.net/browse/MTMS-813', S).card, undefined);
+  assert.deepEqual(info('https://envato.atlassian.net/browse/MTMS-813'), { title: 'MTMS-813', text: '', meta: 'Jira · envato.atlassian.net' });
+  assert.equal(info('https://envato.atlassian.net/jira/software/c/projects/MTMS/boards/9?selectedIssue=MTMS-5').title, 'MTMS-5');
+  assert.equal(info('https://envato.atlassian.net/browse/lowercase-1'), undefined);
+  assert.deepEqual(info('https://envato.atlassian.net/wiki/spaces/ENG/pages/123/Prod+Patch%20Plan'), { title: 'Prod Patch Plan', text: '', meta: 'Confluence · space ENG' });
+  assert.equal(info('https://ap-southeast-2.console.aws.amazon.com/ec2/home#InstanceDetails:instanceId=i-1').meta, 'AWS console · ap-southeast-2');
+  assert.equal(info('https://console.aws.amazon.com/ssm/home?region=us-east-1').meta, 'AWS console · us-east-1');
+  assert.equal(info('https://console.aws.amazon.com/ec2/home#Instances:sort=desc').text, 'Instances:sort=desc');
+  assert.deepEqual(info('https://envato.datadoghq.com/monitors/42?query=env%3Aprod'), { title: 'Monitors 42', text: 'env:prod', meta: 'Datadog · envato.datadoghq.com' });
+  assert.deepEqual(info('https://envato.slack.com/archives/C0123/p1700000000123456'), { title: 'Slack message', text: 'Channel C0123 · 2023-11-14 22:13 UTC', meta: 'Slack · envato' });
+  assert.equal(info('https://envato.slack.com/archives/C0123/p1700000000123456?thread_ts=1700000000.000100').title, 'Slack thread');
+  assert.equal(C.previewFor('https://envato.slack.com/', S).info, undefined);
+  assert.equal(C.previewFor('https://atlassian.net.evil.io/browse/A-1', S), null);
+});
+
 test('previewFor: only listed sites, and a lookalike host is not trusted', () => {
   assert.equal(C.previewFor('https://github.com/a/b', ['youtube.com']), null);
   assert.equal(C.previewFor('https://github.com.evil.io/a/b', C.DEFAULT_SITES), null);
