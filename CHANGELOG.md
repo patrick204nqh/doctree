@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix: copying a quote gives its Markdown source, so inline code, bold, italics, lists and nested quotes paste as written instead of losing their backticks and markers. A reference-style link copies as an inline `[text](url)` link.
 - Fix: the Copy button on a quote or code block no longer drops links. Plain text keeps `[text](url)` and the clipboard also carries rich HTML, so pasting into Slack, Confluence or Gmail gives a real hyperlink.
 - Links to files in the open folder: hovering one shows the file's name, folder path and type (or "Not found in this folder"), and copying a quote or code block with one gives its `file://` path when the folder's location is set (Copy menu), else its path from the folder root, instead of a relative path that breaks once pasted.
 - Trusted sites: Jira, Confluence (`atlassian.net`), AWS console, Datadog and Slack links show a hover card built from the URL alone (issue key, page title, service and region, message time). These sites need a login, so Doctree makes no request for them. Saved site lists keep their own entries: add `atlassian.net`, `aws.amazon.com`, `datadoghq.com`, `slack.com` in Settings.

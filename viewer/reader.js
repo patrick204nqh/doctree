@@ -245,6 +245,16 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
     };
   }
 
+  // A quote keeps its Markdown source, so its Copy button pastes code, emphasis and lists as written
+  renderer.blockquote = function (token) {
+    let md = token.text;
+    // a reference link's definition sits outside the quote: write the link inline
+    marked.walkTokens(token.tokens, (t) => {
+      if (t.type === 'link' && t.raw.endsWith(']')) md = md.replace(t.raw, () => `[${t.text}](${t.href})`);
+    });
+    return `<blockquote data-md="${escapeAttr(md)}">\n${this.parser.parse(token.tokens)}</blockquote>\n`;
+  };
+
   const { fields, body } = splitFrontmatter(markdown);
   bodyEl.innerHTML = DOMPurify.sanitize(marked.parse(body, { renderer, gfm: true, breaks: false }), PURIFY_CONFIG);
   decorateLinks(bodyEl);
@@ -352,12 +362,24 @@ function diskLink(href) {
   return (base ? 'file://' + encodeURI(`${base}/${rel}`) : rel) + (hit.anchor ? '#' + hit.anchor : '');
 }
 
+/** A quote's Markdown with each link to a file in the open folder pointing at that file, as the rendered copy does. */
+function quoteText(md, block) {
+  const local = new Set([...block.querySelectorAll('a[data-md-link]')].map((a) => a.dataset.mdLink));
+  marked.walkTokens(marked.lexer(md), (t) => {
+    const href = t.type === 'link' && local.has(t.href) && isRelativeLink(t.href) && diskLink(t.href);
+    if (href) md = md.replace(t.raw, () => `[${t.text}](${href})`);
+  });
+  return md;
+}
+
 /**
- * What a block's Copy button puts on the clipboard. Plain text keeps each link as [text](url) and text/html keeps it as a real
- * link (Slack, Confluence and Gmail paste that as a hyperlink); a block with no link copies as plain text only.
+ * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source; a code block's is its text.
+ * Plain text keeps each link as [text](url) and text/html keeps it as a real link (Slack, Confluence and Gmail paste that as
+ * a hyperlink); a block with no link copies as plain text only.
  */
 function blockClip(block) {
-  if (!block.querySelector('a[href]')) return { text: block.innerText.replace(/\n$/, '') };
+  const md = block.dataset.md;
+  if (!block.querySelector('a[href]')) return { text: md ?? block.innerText.replace(/\n$/, '') };
   const copy = block.cloneNode(true);
   for (const a of copy.querySelectorAll('a[href]')) {
     const md = a.dataset.mdLink;
@@ -369,6 +391,7 @@ function blockClip(block) {
     a.replaceWith(plain);
   }
   const html = copy.innerHTML;
+  if (md != null) return { text: quoteText(md, block), html };
   for (const a of copy.querySelectorAll('a')) a.replaceWith(a.textContent === a.getAttribute('href') ? a.textContent : `[${a.textContent}](${a.getAttribute('href')})`);
   // innerText needs a rendered element to keep paragraph breaks; keep the clone off screen
   const host = document.createElement('div');
