@@ -28,7 +28,7 @@ export function buildToc() {
   const heads = [...bodyEl.querySelectorAll('h1, h2, h3, h4, h5, h6')];
   const ids = headingIds(heads.map((h) => h.textContent));
   heads.forEach((h, i) => { h.id = ids[i]; });
-  tocHeads = heads.filter((h) => h.tagName < 'H4');
+  tocHeads = heads.filter((h) => h.tagName < 'H4' && !h.closest('blockquote'));
   tocEl.replaceChildren(...tocHeads.map((h, i) => {
     const a = document.createElement('a');
     a.href = '#';
