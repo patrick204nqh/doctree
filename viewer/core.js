@@ -27,9 +27,12 @@ const FILE_TYPES = {
   yml: ['YAML', 'yaml'], yaml: ['YAML', 'yaml'], toml: ['TOML', 'ini'],
   svg: ['SVG', 'xml'],
   png: ['PNG', null], jpg: ['JPEG', null], jpeg: ['JPEG', null], gif: ['GIF', null], webp: ['WebP', null],
+  mp3: ['MP3', null], mp4: ['MP4', null],
 };
 /** Shown as a picture. SVG is also text, so it keeps the Raw view; the rest are binary. */
 export const IMAGE_EXTS = new Set(['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp']);
+/** Played with the browser's own controls: extension → element. Binary, so no Raw view and nothing to copy. */
+export const MEDIA_TAGS = { mp3: 'audio', mp4: 'video' };
 const EXTENSIONS = Object.keys(FILE_TYPES);
 const EXT_PATTERN = EXTENSIONS.join('|');
 export const SHOWN = new RegExp(`\\.(${EXT_PATTERN})$`, 'i');

@@ -210,9 +210,10 @@ test('fileInfo: label and highlight language by extension, plain Text for the re
 });
 
 test('SHOWN: scripts, config files and images are listed, other binaries are not', () => {
-  for (const n of ['a.rb', 'a.py', 'a.sh', 'a.yaml', 'a.toml', 'a.HTML', 'a.svg', 'a.PNG', 'a.jpeg', 'a.webp']) assert.ok(C.SHOWN.test(n), n);
+  for (const n of ['a.rb', 'a.py', 'a.sh', 'a.yaml', 'a.toml', 'a.HTML', 'a.svg', 'a.PNG', 'a.jpeg', 'a.webp', 'a.MP3', 'a.mp4']) assert.ok(C.SHOWN.test(n), n);
   assert.ok(!C.SHOWN.test('a.zip'));
   assert.ok(C.IMAGE_EXTS.has(C.fileInfo('logo.PNG').ext));
+  assert.equal(C.MEDIA_TAGS[C.fileInfo('clip.MP4').ext], 'video');
 });
 
 test('formatSize: bytes, KB, MB', () => {

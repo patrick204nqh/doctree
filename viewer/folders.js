@@ -10,7 +10,7 @@ import { textSpan, menuItem, setupMenu, flash } from './dom.js';
 import { buildTree, findIndex, hashToPath, parseBase } from './core.js';
 import { renderCrumbs } from './crumbs.js';
 import { renderTree, startRescans } from './tree.js';
-import { openPath, currentText } from './reader.js';
+import { openPath, copyCurrent } from './reader.js';
 import { forgetRecent } from './palette.js';
 
 const FOLDERS_MAX = 8;
@@ -41,13 +41,14 @@ function absPath() {
 }
 
 async function copy(kind) {
-  const text = kind === 'content' ? await currentText() : kind === 'absolute' ? absPath() : relPath();
+  const text = kind === 'absolute' ? absPath() : relPath();
   if (!text && kind !== 'content') { // the folder's location on disk is not known yet
     copyMenu.showPopover();
     return;
   }
   try {
-    await navigator.clipboard.writeText(text);
+    if (kind === 'content') await copyCurrent();
+    else await navigator.clipboard.writeText(text);
   } catch (err) {
     console.warn('[Doctree] copy failed:', err);
     return;

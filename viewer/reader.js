@@ -6,7 +6,7 @@
 import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG,
-  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf, IMAGE_EXTS, svgSize,
+  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
 } from './core.js';
 import { flash } from './dom.js';
 import { buildToc } from './outline.js';
@@ -141,9 +141,20 @@ function setRaw(raw) {
 previewBtn.addEventListener('click', () => setRaw(false));
 rawBtn.addEventListener('click', () => setRaw(true));
 
-/** The text on disk, whichever view is showing: what the Copy button copies. */
-export async function currentText() {
-  return (await state.currentHandle.getFile()).text();
+/** The open file on the clipboard: a picture as an image (PNG, the one bitmap type Chrome accepts), anything else as its text on disk. */
+export async function copyCurrent() {
+  const file = await state.currentHandle.getFile();
+  const ext = fileInfo(file.name).ext;
+  if (!IMAGE_EXTS.has(ext) || ext === 'svg') return navigator.clipboard.writeText(await file.text());
+  const png = ext === 'png' ? Promise.resolve(file.slice(0, file.size, 'image/png')) : toPng(file);
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]); // a promise keeps the click's user activation
+}
+
+async function toPng(file) {
+  const bmp = await createImageBitmap(file);
+  const canvas = new OffscreenCanvas(bmp.width, bmp.height);
+  canvas.getContext('2d').drawImage(bmp, 0, 0);
+  return canvas.convertToBlob({ type: 'image/png' });
 }
 
 async function renderFile(file, info, pathArr) {
@@ -157,7 +168,14 @@ async function renderFile(file, info, pathArr) {
   contentWrapper.classList.toggle('fill', canPreview && !raw && info.ext === 'html');
 
   const image = IMAGE_EXTS.has(info.ext) && !(info.ext === 'svg' && raw);
-  copyContentBtn.disabled = image && info.ext !== 'svg'; // a PNG has no text to copy
+  const media = Object.hasOwn(MEDIA_TAGS, info.ext);
+  copyContentBtn.disabled = media;
+  copyContentBtn.title = image && info.ext !== 'svg' ? 'Copy the image' : "Copy the file's text";
+  if (media) {
+    renderMedia(file, info);
+    buildToc();
+    return;
+  }
   if (image) {
     await renderImage(file, info);
     buildToc();
@@ -305,6 +323,18 @@ async function renderImage(file, info) {
   const declared = info.ext === 'svg' ? svgSize(await file.text()) : null;
   if (declared) showSize(declared);
   else if (info.ext !== 'svg') img.addEventListener('load', () => img.isConnected && showSize(`${img.naturalWidth} × ${img.naturalHeight}`), { once: true });
+}
+
+/** An mp3 or mp4 in the browser's own player; the file is streamed from its blob URL, never read into memory. */
+function renderMedia(file, info) {
+  const el = document.createElement(MEDIA_TAGS[info.ext]);
+  el.className = 'picture';
+  el.controls = true;
+  el.preload = 'metadata';
+  const url = URL.createObjectURL(file);
+  blobUrls.push(url);
+  el.src = url;
+  bodyEl.replaceChildren(el);
 }
 
 async function renderText(file, lang) {

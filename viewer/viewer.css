@@ -1110,10 +1110,16 @@ a.video-card small { padding-bottom: 8px; color: var(--muted); }
   resize: vertical;
 }
 
-/* An image file: fits the reading area, centered; a viewBox-only SVG would otherwise fill the width and run off the bottom */
-#markdown-body img.picture {
+/* An image or media file: fits the reading area, centered; a viewBox-only SVG would otherwise fill the width and run off the bottom */
+#markdown-body img.picture, #markdown-body video.picture {
   display: block;
   margin: 0 auto;
   max-height: calc(100vh - 140px);
   object-fit: contain;
+}
+#markdown-body audio.picture {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
 }

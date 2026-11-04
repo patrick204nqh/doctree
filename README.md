@@ -31,6 +31,7 @@
 - **Live refresh:** the open file reloads within 2 seconds of a change.
 - Light and dark theme, keyboard first.
 - **Images:** SVG, PNG, JPEG, GIF and WebP files open as pictures.
+- **Audio and video:** MP3 and MP4 files play in place.
 - **Trusted sites:** hover a GitHub, Wikipedia or video link for a card; a video link on its own line shows a thumbnail. Jira, Confluence, AWS console, Datadog and Slack links get a card read from the URL itself (no request). The site list is editable in Settings.
 - **Read-only:** Doctree never edits, uploads or deletes anything.
 
