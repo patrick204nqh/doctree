@@ -392,24 +392,20 @@ function diskLink(href) {
   return (base ? 'file://' + encodeURI(`${base}/${rel}`) : rel) + (hit.anchor ? '#' + hit.anchor : '');
 }
 
-/** A link for plain text: `text (url)`, or just the url when the text is the url. `[text](url)` pastes as a link inside a link. */
-const plainLink = (text, href) => (text === href ? href : `${text} (${href})`);
-
-/** A quote's Markdown with each link written as `text (url)`; a link to a file in the open folder points at that file, as the rendered copy does. */
+/** A quote's Markdown with each link to a file in the open folder pointing at that file, as the rendered copy does. */
 function quoteText(md, block) {
   const local = new Set([...block.querySelectorAll('a[data-md-link]')].map((a) => a.dataset.mdLink));
   marked.walkTokens(marked.lexer(md), (t) => {
-    if (t.type !== 'link') return;
-    const href = (local.has(t.href) && isRelativeLink(t.href) && diskLink(t.href)) || t.href;
-    md = md.replace(t.raw, () => plainLink(t.text, href));
+    const href = t.type === 'link' && local.has(t.href) && isRelativeLink(t.href) && diskLink(t.href);
+    if (href) md = md.replace(t.raw, () => `[${t.text}](${href})`);
   });
   return md;
 }
 
 /**
- * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source with links written as
- * `text (url)`; a code block's is its text. text/html keeps each link as a real link (Slack, Confluence and Gmail paste
- * that as a hyperlink); a block with no link copies as plain text only.
+ * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source; a code block's is its text.
+ * Plain text keeps each link as [text](url) and text/html keeps it as a real link (Slack, Confluence and Gmail paste that as
+ * a hyperlink); a block with no link copies as plain text only.
  */
 function blockClip(block) {
   const md = block.dataset.md;
@@ -426,7 +422,7 @@ function blockClip(block) {
   }
   const html = copy.innerHTML;
   if (md != null) return { text: quoteText(md, block), html };
-  for (const a of copy.querySelectorAll('a')) a.replaceWith(plainLink(a.textContent, a.getAttribute('href')));
+  for (const a of copy.querySelectorAll('a')) a.replaceWith(a.textContent === a.getAttribute('href') ? a.textContent : `[${a.textContent}](${a.getAttribute('href')})`);
   // innerText needs a rendered element to keep paragraph breaks; keep the clone off screen
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-99999px;top:0;width:600px';
