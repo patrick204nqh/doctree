@@ -5,9 +5,9 @@
 - Media: `.mp3` and `.mp4` files are listed in the tree and play in the browser's own player.
 - Fix: the Copy button works on a picture. `.png`, `.jpg`, `.gif` and `.webp` files copy to the clipboard as an image (converted to PNG) and paste into Slack, Jira or a PR. It was greyed out before.
 - Fix: the outline no longer lists headings inside a quote, so a quoted Context / Done When block under a ticket doesn't crowd out the file's own headings. Links to those headings still work.
-- Fix: copying a quote gives its Markdown source, so inline code, bold, italics, lists and nested quotes paste as written instead of losing their backticks and markers. A reference-style link copies as an inline `[text](url)` link.
-- Fix: the Copy button on a quote or code block no longer drops links. Plain text keeps `[text](url)` and the clipboard also carries rich HTML, so pasting into Slack, Confluence or Gmail gives a real hyperlink.
-- Links to files in the open folder: hovering one shows the file's name, folder path and type (or "Not found in this folder"), and copying a quote or code block with one gives its `file://` path when the folder's location is set (Copy menu), else its path from the folder root, instead of a relative path that breaks once pasted.
+- Fix: copying a quote gives its Markdown source, so inline code, bold, italics, lists and nested quotes paste as written instead of losing their backticks and markers.
+- Fix: copying a quote or code block with a link gives the link's text alone as plain text, and the link itself in the rich HTML copy. Pasting into a GitHub comment gave `[[text](url)](url)`, because GitHub wraps each linked word of the plain text in a link and the plain text already held one.
+- Links to files in the open folder: hovering one shows the file's name, folder path and type (or "Not found in this folder"), and copying a quote or code block with one makes its rich link a `file://` path when the folder's location is set (Copy menu), else its path from the folder root, instead of a relative path that breaks once pasted.
 - Trusted sites: Jira, Confluence (`atlassian.net`), AWS console, Datadog and Slack links show a hover card built from the URL alone (issue key, page title, service and region, message time). These sites need a login, so Doctree makes no request for them. Saved site lists keep their own entries: add `atlassian.net`, `aws.amazon.com`, `datadoghq.com`, `slack.com` in Settings.
 
 ## 1.3.0 — 2026-10-17

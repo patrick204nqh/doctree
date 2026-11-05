@@ -392,20 +392,18 @@ function diskLink(href) {
   return (base ? 'file://' + encodeURI(`${base}/${rel}`) : rel) + (hit.anchor ? '#' + hit.anchor : '');
 }
 
-/** A quote's Markdown with each link to a file in the open folder pointing at that file, as the rendered copy does. */
-function quoteText(md, block) {
-  const local = new Set([...block.querySelectorAll('a[data-md-link]')].map((a) => a.dataset.mdLink));
+/** A quote's Markdown with each link reduced to its text. The html flavour carries the URL, and GitHub's comment box wraps each linked word of the plain text in [text](url) itself, so a link written out here would come out nested. */
+function quoteText(md) {
   marked.walkTokens(marked.lexer(md), (t) => {
-    const href = t.type === 'link' && local.has(t.href) && isRelativeLink(t.href) && diskLink(t.href);
-    if (href) md = md.replace(t.raw, () => `[${t.text}](${href})`);
+    if (t.type === 'link') md = md.replace(t.raw, () => t.text);
   });
   return md;
 }
 
 /**
- * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source; a code block's is its text.
- * Plain text keeps each link as [text](url) and text/html keeps it as a real link (Slack, Confluence and Gmail paste that as
- * a hyperlink); a block with no link copies as plain text only.
+ * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source and a code block's is its
+ * text; both leave a link as its text alone. text/html keeps each link as a real link (Slack, Confluence, Gmail and GitHub
+ * paste that as a hyperlink); a block with no link copies as plain text only.
  */
 function blockClip(block) {
   const md = block.dataset.md;
@@ -421,8 +419,8 @@ function blockClip(block) {
     a.replaceWith(plain);
   }
   const html = copy.innerHTML;
-  if (md != null) return { text: quoteText(md, block), html };
-  for (const a of copy.querySelectorAll('a')) a.replaceWith(a.textContent === a.getAttribute('href') ? a.textContent : `[${a.textContent}](${a.getAttribute('href')})`);
+  if (md != null) return { text: quoteText(md), html };
+  for (const a of copy.querySelectorAll('a')) a.replaceWith(a.textContent);
   // innerText needs a rendered element to keep paragraph breaks; keep the clone off screen
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-99999px;top:0;width:600px';
