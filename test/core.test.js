@@ -300,6 +300,7 @@ test('previewFor: only listed sites, and a lookalike host is not trusted', () =>
   assert.equal(C.previewFor('https://github.com.evil.io/a/b', C.DEFAULT_SITES), null);
   assert.equal(C.previewFor('https://notgithub.com/a/b', C.DEFAULT_SITES), null);
   assert.deepEqual(C.previewFor('https://example.com/x', ['example.com']), { site: 'example.com' });
+  for (const h of ['https://developers.cloudflare.com/waf/', 'https://endoflife.date/ruby', 'https://thehackernews.com/2026/01/x.html', 'https://docs.google.com/document/d/x']) assert.ok(C.previewFor(h, C.DEFAULT_SITES), h);
 });
 
 test('cardText: repo, issue, Wikipedia and video results become plain strings', () => {

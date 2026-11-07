@@ -9,6 +9,7 @@
 - Fix: copying a quote or code block with a link gives the link's text alone as plain text, and the link itself in the rich HTML copy. Pasting into a GitHub comment gave `[[text](url)](url)`, because GitHub wraps each linked word of the plain text in a link and the plain text already held one.
 - Links to files in the open folder: hovering one shows the file's name, folder path and type (or "Not found in this folder"), and copying a quote or code block with one makes its rich link a `file://` path when the folder's location is set (Copy menu), else its path from the folder root, instead of a relative path that breaks once pasted.
 - Trusted sites: Jira, Confluence (`atlassian.net`), AWS console, Datadog and Slack links show a hover card built from the URL alone (issue key, page title, service and region, message time). These sites need a login, so Doctree makes no request for them. Saved site lists keep their own entries: add `atlassian.net`, `aws.amazon.com`, `datadoghq.com`, `slack.com` in Settings.
+- Trusted sites: `cloudflare.com`, `endoflife.date`, `thehackernews.com` and `google.com` are trusted by default (link label only, no hover card, no request). Saved site lists keep their own entries: add them in Settings.
 
 ## 1.3.0 — 2026-10-17
 

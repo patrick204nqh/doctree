@@ -288,6 +288,7 @@ export function splitName(name) {
 export const DEFAULT_SITES = [
   'youtube.com', 'youtu.be', 'vimeo.com', 'loom.com', 'github.com', 'wikipedia.org',
   'atlassian.net', 'aws.amazon.com', 'datadoghq.com', 'datadoghq.eu', 'slack.com',
+  'cloudflare.com', 'endoflife.date', 'thehackernews.com', 'google.com',
 ];
 
 /** "https://www.GitHub.com/a, youtube.com" → ["github.com", "youtube.com"]: hosts only, one per entry. */
