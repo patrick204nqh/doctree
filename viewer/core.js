@@ -410,3 +410,6 @@ export function svgSize(text) {
   const vb = attr('viewBox')?.trim().split(/[\s,]+/).map(Number);
   return vb?.length === 4 && vb[2] > 0 && vb[3] > 0 ? `${vb[2]} × ${vb[3]}` : null;
 }
+
+/** Inline code that is exactly a hex color: "#E600E6", "#fff", "#11223380". */
+export const isHexColor = (s) => /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(s);

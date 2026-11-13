@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Colors: inline code that is a hex color (`#E600E6`, `#fff`, `#11223380`) shows a swatch of that color after it.
 - Media: `.mp3` and `.mp4` files are listed in the tree and play in the browser's own player.
 - Fix: the Copy button works on a picture. `.png`, `.jpg`, `.gif` and `.webp` files copy to the clipboard as an image (converted to PNG) and paste into Slack, Jira or a PR. It was greyed out before.
 - Fix: the outline no longer lists headings inside a quote, so a quoted Context / Done When block under a ticket doesn't crowd out the file's own headings. Links to those headings still work.

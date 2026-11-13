@@ -439,6 +439,16 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border-radius: 4px;
 }
 
+#markdown-body .color-dot {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-left: 0.45em;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  vertical-align: -0.05em;
+}
+
 #markdown-body pre {
   margin-bottom: 1em;
   padding: 16px;

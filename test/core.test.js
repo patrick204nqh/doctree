@@ -318,3 +318,8 @@ test('svgSize: width and height win, then viewBox; units or no size give null', 
   assert.equal(C.svgSize('<svg width="50%" height="10em">'), null);
   assert.equal(C.svgSize('not svg'), null);
 });
+
+test('isHexColor: only a whole hex color counts', () => {
+  for (const ok of ['#E600E6', '#fff', '#abcd', '#11223380']) assert.ok(C.isHexColor(ok), ok);
+  for (const no of ['#12345', '#GGG', 'E600E6', '#E600E6 x', '#1234567']) assert.ok(!C.isHexColor(no), no);
+});

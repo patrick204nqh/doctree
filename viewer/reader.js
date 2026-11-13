@@ -5,7 +5,7 @@
  */
 import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn } from './state.js';
 import {
-  isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG,
+  isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG, isHexColor,
   hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
 } from './core.js';
 import { flash } from './dom.js';
@@ -276,6 +276,14 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
   const { fields, body } = splitFrontmatter(markdown);
   bodyEl.innerHTML = DOMPurify.sanitize(marked.parse(body, { renderer, gfm: true, breaks: false }), PURIFY_CONFIG);
   decorateLinks(bodyEl);
+  // `#E600E6` in inline code gets a swatch of that color (CSSOM, so no inline style reaches the sanitizer)
+  bodyEl.querySelectorAll('code').forEach((el) => {
+    if (el.closest('pre') || !isHexColor(el.textContent)) return;
+    const dot = document.createElement('span');
+    dot.className = 'color-dot';
+    dot.style.backgroundColor = el.textContent;
+    el.append(dot);
+  });
   if (fields.length) bodyEl.prepend(frontmatterCard(fields));
   buildToc();
 
@@ -409,6 +417,7 @@ function blockClip(block) {
   const md = block.dataset.md;
   if (!block.querySelector('a[href]')) return { text: md ?? block.innerText.replace(/\n$/, '') };
   const copy = block.cloneNode(true);
+  copy.querySelectorAll('.color-dot').forEach((d) => d.remove());
   for (const a of copy.querySelectorAll('a[href]')) {
     const md = a.dataset.mdLink;
     const href = (md != null && isRelativeLink(md) && diskLink(md)) || md || a.getAttribute('href');
