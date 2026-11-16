@@ -167,3 +167,15 @@ itself, at the URL on npmjs.com/package/<name>.
 | @braintree/sanitize-url | MIT |
 | @iconify/utils | MIT |
 | @mermaid-js/parser | MIT |
+
+-------------------------------------------------------------------------------
+
+## Simple Icons (v16.38.0)
+
+License: CC0 1.0 Universal (the icon set)
+https://github.com/simple-icons/simple-icons
+
+The brand icons in viewer/icons/ (shown for `:github:`, `:buildkite:` and the
+like). The full license is in viewer/icons/simple-icons.LICENSE.md. Each icon
+remains the trademark of its owner and is used only to refer to that brand; see
+viewer/icons/simple-icons.DISCLAIMER.md.

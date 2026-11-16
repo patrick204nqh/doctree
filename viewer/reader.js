@@ -15,6 +15,7 @@ import { highlightActiveByPath } from './tree.js';
 import { rememberRecent } from './palette.js';
 import { isDark } from './settings.js';
 import { decorateLinks } from './links.js';
+import { emojify } from './emoji.js';
 
 const TEXT_CAP = 256 * 1024; // bytes shown before "Show all"
 const FORMAT_CAP = 1024 * 1024; // largest file shown formatted (JSON, CSV); highlighting stops at twice this
@@ -276,6 +277,7 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
   const { fields, body } = splitFrontmatter(markdown);
   bodyEl.innerHTML = DOMPurify.sanitize(marked.parse(body, { renderer, gfm: true, breaks: false }), PURIFY_CONFIG);
   decorateLinks(bodyEl);
+  emojify(bodyEl);
   // `#E600E6` in inline code gets a swatch of that color (CSSOM, so no inline style reaches the sanitizer)
   bodyEl.querySelectorAll('code').forEach((el) => {
     if (el.closest('pre') || !isHexColor(el.textContent)) return;
@@ -420,6 +422,7 @@ function blockClip(block) {
   if (!block.querySelector('a[href]')) return { text: md ?? block.innerText.replace(/\n$/, '') };
   const copy = block.cloneNode(true);
   copy.querySelectorAll('.color-dot').forEach((d) => d.remove());
+  copy.querySelectorAll('.emoji-icon').forEach((i) => i.replaceWith(i.dataset.shortcode)); // an icon pastes as its :name:
   for (const a of copy.querySelectorAll('a[href]')) {
     const md = a.dataset.mdLink;
     const href = (md != null && isRelativeLink(md) && diskLink(md)) || md || a.getAttribute('href');

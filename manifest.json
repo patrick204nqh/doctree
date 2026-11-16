@@ -53,6 +53,8 @@
         "viewer/folders.js",
         "viewer/reader.js",
         "viewer/links.js",
+        "viewer/emoji.js",
+        "viewer/icons/*.svg",
         "viewer/viewer.css",
         "viewer/theme.js",
         "libs/marked.min.js",

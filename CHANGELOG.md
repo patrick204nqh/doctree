@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Icons: `:github:`, `:buildkite:`, `:jira:`, `:docker:` and about twenty more brand names show as icons (bundled, no network), and common emoji names like `:rocket:` and `:white_check_mark:` show as emoji. Code, code blocks and diagrams keep the text, an unknown `:name:` stays as typed, and copying a quote pastes the icon as its `:name:`.
 - Colors: inline code that is a hex color (`#E600E6`, `#fff`, `#11223380`) shows a swatch of that color after it.
 - Media: `.mp3` and `.mp4` files are listed in the tree and play in the browser's own player.
 - Fix: the Copy button works on a picture. `.png`, `.jpg`, `.gif` and `.webp` files copy to the clipboard as an image (converted to PNG) and paste into Slack, Jira or a PR. It was greyed out before.

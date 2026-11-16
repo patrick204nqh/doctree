@@ -439,6 +439,16 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border-radius: 4px;
 }
 
+#markdown-body .emoji-icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  background-color: currentColor;
+  -webkit-mask: center / contain no-repeat;
+  mask: center / contain no-repeat;
+  vertical-align: -0.2em;
+}
+
 #markdown-body .color-dot {
   display: inline-block;
   width: 0.75em;
