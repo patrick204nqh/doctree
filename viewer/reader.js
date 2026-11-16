@@ -400,18 +400,20 @@ function diskLink(href) {
   return (base ? 'file://' + encodeURI(`${base}/${rel}`) : rel) + (hit.anchor ? '#' + hit.anchor : '');
 }
 
-/** A quote's Markdown with each link reduced to its text. The html flavour carries the URL, and GitHub's comment box wraps each linked word of the plain text in [text](url) itself, so a link written out here would come out nested. */
+/** A quote's Markdown for the plain-text copy: links stay as written, except a relative link, which becomes its file:// path or path from the folder root (a relative path breaks once pasted). */
 function quoteText(md) {
   marked.walkTokens(marked.lexer(md), (t) => {
-    if (t.type === 'link') md = md.replace(t.raw, () => t.text);
+    if (t.type !== 'link' || !isRelativeLink(t.href)) return;
+    const href = diskLink(t.href);
+    if (href) md = md.replace(t.raw, () => `[${t.text}](${href})`);
   });
   return md;
 }
 
 /**
- * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source and a code block's is its
- * text; both leave a link as its text alone. text/html keeps each link as a real link (Slack, Confluence, Gmail and GitHub
- * paste that as a hyperlink); a block with no link copies as plain text only.
+ * What a block's Copy button puts on the clipboard. A quote's plain text is its Markdown source, links included; a code
+ * block's is its text. text/html keeps each link as a real link (Slack, Confluence, Gmail and GitHub paste that as a
+ * hyperlink); a block with no link copies as plain text only.
  */
 function blockClip(block) {
   const md = block.dataset.md;
