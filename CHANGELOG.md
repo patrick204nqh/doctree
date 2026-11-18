@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 — 2026-11-18
 
 - Icons: `:github:`, `:buildkite:`, `:jira:`, `:docker:` and about twenty more brand names show as icons (bundled, no network), and common emoji names like `:rocket:` and `:white_check_mark:` show as emoji. Code, code blocks and diagrams keep the text, an unknown `:name:` stays as typed, and copying a quote pastes the icon as its `:name:`.
 - Colors: inline code that is a hex color (`#E600E6`, `#fff`, `#11223380`) shows a swatch of that color after it.
