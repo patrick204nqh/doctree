@@ -26,7 +26,7 @@
 - **Folder tree** with every name and extension shown, a filter box, and a breadcrumb with folder lists.
 - **Quick open** (`Cmd K` or `Ctrl K`): jump to any file by path, even with the tree hidden.
 - **Markdown** with GitHub-style tables and task lists, Mermaid diagrams, relative images, links between files and front matter chips.
-- **HTML files** in a sandboxed frame, **JSON** as a foldable tree, **CSV** as a table, **source** with syntax highlighting.
+- **HTML files** in a sandboxed frame, **JSON** as a foldable tree, **CSV** as a table, **Mermaid** `.mmd` / `.mermaid` as a diagram, **source** with syntax highlighting.
 - **Preview | Raw** switch, a Copy menu (text, absolute path, relative path) and an outline panel.
 - **Live refresh:** the open file reloads within 2 seconds of a change.
 - Light and dark theme, keyboard first.
@@ -84,6 +84,7 @@ No folder to hand? Open [`examples/demo`](examples/demo) from this repository.
 | `.html` | Rendered in a sandboxed frame: scripts run, but with no access to the extension or the folder. Relative stylesheets, scripts and images load from the folder, and links to other files open in Doctree |
 | `.json`, `.jsonl` | A tree: objects and arrays fold, the first two levels start open, and **Expand all** and **Collapse all** open or close the rest. Text that does not parse, or a file over 1 MB or about 20,000 values, shows as indented, highlighted text |
 | `.csv`, `.tsv` | A table with a sticky header row. Files over 1 MB show as text |
+| `.mmd`, `.mermaid` | A Mermaid diagram (strict mode, same as in Markdown). Files over 1 MB show as text |
 | `.rb`, `.py`, `.js`, `.ts`, `.sh`, `.rs`, `.go`, `.sql`, `.css`, `.xml`, `.yml`, `.yaml`, `.toml` | Source with syntax highlighting (no switch: this is the text) |
 | `.txt`, `.log` | Plain text, exactly as in the file (no switch) |
 

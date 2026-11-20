@@ -20,6 +20,7 @@ const FILE_TYPES = {
   md: ['Markdown', 'markdown'],
   json: ['JSON', 'json'], jsonl: ['JSON Lines', 'json'],
   csv: ['CSV', null], tsv: ['TSV', null],
+  mmd: ['Mermaid', null], mermaid: ['Mermaid', null],
   html: ['HTML', 'xml'], css: ['CSS', 'css'], xml: ['XML', 'xml'],
   txt: ['Text', null], log: ['Log', null],
   rb: ['Ruby', 'ruby'], py: ['Python', 'python'], js: ['JavaScript', 'javascript'], ts: ['TypeScript', 'typescript'],

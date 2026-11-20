@@ -130,7 +130,7 @@ async function loadFileHandle(handle, pathArr) {
 }
 
 /* Preview | Raw: a file with a preview opens in it; the switch (or "r") shows the text on disk. */
-const PREVIEW = new Set(['md', 'html', 'svg', 'csv', 'tsv', 'json', 'jsonl']);
+const PREVIEW = new Set(['md', 'html', 'svg', 'csv', 'tsv', 'json', 'jsonl', 'mmd', 'mermaid']);
 const UNCAPPED = new Set(['md', 'html', 'svg']); // previewed at any size
 
 function setRaw(raw) {
@@ -191,6 +191,7 @@ async function renderFile(file, info, pathArr) {
   if (canPreview && !raw) {
     const text = await file.text();
     if (info.ext === 'html') await renderHtml(text, pathArr);
+    else if (info.ext === 'mmd' || info.ext === 'mermaid') await renderDiagram(text);
     else if (info.ext === 'csv' || info.ext === 'tsv') renderTable(text, info.ext === 'csv' ? ',' : '\t');
     else renderJson(text, info.ext === 'jsonl');
   } else {
@@ -308,6 +309,10 @@ async function renderMarkdown(markdown, { mode, baseDir }) {
     if (!q.parentElement.closest('blockquote') && !q.querySelector('pre')) wrapCode(q);
   });
 
+  await runMermaid();
+}
+
+async function runMermaid() {
   mermaid.initialize({
     startOnLoad: false,
     theme: isDark() ? 'dark' : 'default',
@@ -529,6 +534,15 @@ function renderJson(text, lines) {
     bar.append(btn);
   }
   bodyEl.replaceChildren(bar, tree);
+}
+
+/** A .mmd file is one Mermaid diagram. */
+async function renderDiagram(text) {
+  const div = document.createElement('div');
+  div.className = 'mermaid';
+  div.textContent = text;
+  bodyEl.replaceChildren(div);
+  await runMermaid();
 }
 
 /** CSV or TSV as a table; the first row is the header. */
