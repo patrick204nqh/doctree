@@ -9,8 +9,9 @@
  * file for the session, so a reload after the file changes puts you back where you were.
  */
 import { bodyEl, copyContentBtn, state, pref } from './state.js';
-import { parseDelimited, tableView, toDelimited, rowKey, columnStats } from './core.js';
+import { parseDelimited, tableView, toDelimited, rowKey, columnStats, asNumber, binIndex } from './core.js';
 import { flash, setupMenu } from './dom.js';
+import { drawBars, drawPlot, describe } from './chart.js';
 
 const URL_CELL = /^https?:\/\/\S+$/i;
 const FLAGS = ['red', 'orange', 'green', 'blue', 'purple']; // colours a table row can be flagged with
@@ -60,7 +61,7 @@ export function renderTable(text, delim, key) {
 
   const saved = tableStates.get(key);
   const s = saved && saved.sortCol < head.length ? saved
-    : { query: '', sortCol: -1, desc: false, page: 0, flag: 'all', eq: null, chart: { open: false, col: 0 }, selected: new Set() };
+    : { query: '', sortCol: -1, desc: false, page: 0, flag: 'all', eq: null, chart: { open: false, col: 0, type: 'bar', top: 10 }, selected: new Set() };
   const size = rowsPerPage();
   if (s.size !== size) s.page = 0; // a new page size starts from the first page
   s.size = size;
@@ -160,10 +161,13 @@ export function renderTable(text, delim, key) {
 
   // ── The chart panel ──
   const chartCol = make('select', { ariaLabel: 'Chart column', title: 'Chart column' }, ...head.map((_, i) => new Option(label(i), i)));
+  const chartTop = make('select', { ariaLabel: 'Values shown', title: 'How many of the most common values to show' }, ...[10, 25, 50].map((n) => new Option(`Top ${n}`, n)));
+  const typeBtns = ['bar', 'line'].map((t) => { const b = make('button', { type: 'button', textContent: cap(t) }); b.dataset.type = t; return b; });
+  const chartType = make('span', { className: 'seg', role: 'group', ariaLabel: 'Chart type' }, ...typeBtns);
   const chartNote = make('span', { className: 'chart-note' });
-  const chartBars = make('ol', { className: 'chart-bars' });
+  const chartBody = make('div', { className: 'chart-body' });
   const chart = make('section', { className: 'table-chart', ariaLabel: 'Chart', hidden: true },
-    make('div', { className: 'chart-head' }, chartCol, chartNote), chartBars);
+    make('div', { className: 'chart-head' }, chartCol, chartTop, chartType, chartNote), chartBody);
 
   // the selection bar floats over the table's bottom edge; it comes before the rows so Tab reaches it first
   const view = make('div', { className: 'table-view' }, bar, chart, bulk, wrap, colMenu, flagMenu);
@@ -173,13 +177,13 @@ export function renderTable(text, delim, key) {
     const color = flags[keys[i]];
     return s.flag === 'flagged' ? Boolean(color) : s.flag === 'unflagged' ? !color : color === s.flag;
   });
-  // `eq` is a chart bar's value: only rows whose cell in that column is exactly it
+  // `eq` comes from clicking a chart bar: only rows whose cell in that column is that value, or in that bin of numbers
+  const eqTest = (eq) => (eq.bin === undefined
+    ? (i) => rows[i][eq.col] === eq.value
+    : (i) => { const n = asNumber(rows[i][eq.col] ?? ''); return n !== null && binIndex(n, eq.min, eq.width, eq.bins) === eq.bin; });
   const matching = () => {
-    const byFlag = flagTest();
-    const eq = s.eq;
-    const keepRow = byFlag && eq ? (i) => byFlag(i) && rows[i][eq.col] === eq.value
-      : eq ? (i) => rows[i][eq.col] === eq.value : byFlag;
-    return tableView(rows, { ...s, head, cols: s.hidden.size ? visible() : null, keep: keepRow });
+    const tests = [flagTest(), s.eq && eqTest(s.eq)].filter(Boolean);
+    return tableView(rows, { ...s, head, cols: s.hidden.size ? visible() : null, keep: tests.length ? (i) => tests.every((t) => t(i)) : null });
   };
   let shown = [];   // every matching row, in display order
   let onPage = [];  // the rows on the current page
@@ -203,37 +207,41 @@ export function renderTable(text, delim, key) {
   };
   const applyHidden = () => ths.forEach((th, i) => { th.hidden = s.hidden.has(i); }); // body cells follow in `paint`
 
+  let noteText = '';
+  let plotWidth = 0;
   const renderChart = () => {
     chart.hidden = !s.chart.open;
     chartBtn.setAttribute('aria-pressed', String(s.chart.open));
     if (!s.chart.open) return;
-    const col = s.chart.col;
-    const st = columnStats(rows, shown, col);
+    const { col, type, top } = s.chart;
+    const st = columnStats(rows, shown, col, { top });
     const num = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    const rowsNote = `${st.total.toLocaleString()} row${st.total === 1 ? '' : 's'}${st.empty ? ` · ${st.empty.toLocaleString()} empty` : ''}`;
+    const filled = st.total - st.empty;
     chartCol.value = String(col);
-    const line = (labelText, n, widest, item) => {
-      const fill = make('span', { className: 'bar-fill' });
-      fill.style.width = `${widest ? (n / widest) * 100 : 0}%`;
-      return make('li', {}, make(item.tag, item.props, make('span', { className: 'bar-label', textContent: labelText, title: labelText }),
-        make('span', { className: 'bar-track' }, fill), make('span', { className: 'bar-n', textContent: n.toLocaleString() })));
-    };
-    if (st.kind === 'numbers') {
-      chartNote.textContent = `${num(st.bins[0].from)} to ${num(st.bins.at(-1).to)} · ${rowsNote}`;
-      const widest = Math.max(...st.bins.map((b) => b.count));
-      chartBars.replaceChildren(...st.bins.map((b) => line(`${num(b.from)} – ${num(b.to)}`, b.count, widest, { tag: 'div', props: { className: 'bar-row' } })));
-    } else {
-      chartNote.textContent = `${st.distinct.toLocaleString()} distinct · ${rowsNote}`;
-      const widest = st.top[0]?.count ?? 0;
-      const items = st.top.map((t) => {
-        const li = line(t.value, t.count, widest, { tag: 'button', props: { type: 'button', className: 'bar-row', title: `Show only rows where ${label(col)} is “${t.value}”` } });
-        li.firstChild.dataset.value = t.value;
-        return li;
-      });
-      if (st.other) items.push(make('li', { className: 'bar-other', textContent: `${st.other.toLocaleString()} more rows in ${(st.distinct - st.top.length).toLocaleString()} other values` }));
-      chartBars.replaceChildren(...items);
+    chartTop.value = String(top);
+    chartTop.hidden = st.kind !== 'text';
+    typeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === type)));
+    const span = st.kind === 'text' ? `${st.distinct.toLocaleString()} distinct` : `${num(st.min)} to ${num(st.bins.at(-1).to)}`;
+    noteText = `${span} · ${st.total.toLocaleString()} row${st.total === 1 ? '' : 's'}${st.empty ? ` · ${st.empty.toLocaleString()} empty` : ''}`;
+    chartNote.textContent = noteText;
+    if (!filled) {
+      chartBody.replaceChildren(make('p', { className: 'chart-empty', textContent: st.total ? 'This column is empty in the matching rows.' : 'No rows match the filter.' }));
+      return;
     }
+    const points = st.kind === 'text'
+      ? st.top.map((t) => ({ label: t.value, n: t.count, share: t.count / filled, pick: { col, value: t.value } }))
+      : st.bins.map((b, i) => {
+        const name = `${num(b.from)} – ${num(b.to)}`;
+        return { label: name, n: b.count, share: b.count / filled, pick: { col, bin: i, min: st.min, width: st.width, bins: st.bins.length, label: name } };
+      });
+    const pick = (p) => change({ eq: p.pick });
+    plotWidth = chartBody.clientWidth;
+    if (st.kind === 'text' && type === 'bar') drawBars(chartBody, points, { onPick: pick });
+    else drawPlot(chartBody, points, { type, width: plotWidth, onPick: pick, onHover: (p) => { chartNote.textContent = p ? describe(p) : noteText; } });
+    if (st.other) chartBody.append(make('p', { className: 'chart-foot', textContent: `${st.other.toLocaleString()} more rows in ${(st.distinct - st.top.length).toLocaleString()} other values` }));
   };
+  // the plot is drawn to the panel's width: draw again when the panel is attached or resized
+  new ResizeObserver(() => { if (s.chart.open && chartBody.clientWidth && Math.abs(chartBody.clientWidth - plotWidth) > 1) renderChart(); }).observe(chartBody);
 
   /** Selection and flag counts, the selection bar and the select-all box: no table rebuild, so focus stays. */
   const refresh = () => {
@@ -281,7 +289,7 @@ export function renderTable(text, delim, key) {
     flagBtn.textContent = s.flag === 'all' ? 'Flags' : `Flags: ${flagLabel(s.flag)}`;
     flagBtn.classList.toggle('active', s.flag !== 'all');
     eqChip.hidden = !s.eq;
-    if (s.eq) eqChip.textContent = `${label(s.eq.col)} = ${s.eq.value} ×`;
+    if (s.eq) eqChip.textContent = `${label(s.eq.col)} = ${s.eq.label ?? s.eq.value} ×`;
     renderChart();
   };
   const change = (patch) => { Object.assign(s, patch, { page: 0 }); update(); }; // a new filter or sort starts from the first page
@@ -318,9 +326,10 @@ export function renderTable(text, delim, key) {
   });
   chartBtn.addEventListener('click', () => { s.chart.open = !s.chart.open; update(); });
   chartCol.addEventListener('change', () => { s.chart.col = Number(chartCol.value); renderChart(); });
-  chartBars.addEventListener('click', (e) => {
-    const hit = e.target.closest('button.bar-row');
-    if (hit) change({ eq: { col: s.chart.col, value: hit.dataset.value } });
+  chartTop.addEventListener('change', () => { s.chart.top = Number(chartTop.value); renderChart(); });
+  chartType.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (b) { s.chart.type = b.dataset.type; renderChart(); }
   });
   eqChip.addEventListener('click', () => change({ eq: null }));
   prevBtn.addEventListener('click', () => turn(-1));

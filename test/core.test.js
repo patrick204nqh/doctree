@@ -301,6 +301,19 @@ test('columnStats: histogram for number columns, most common values for text, em
   assert.deepEqual(C.columnStats([['7'], ['7']], [0, 1], 0).bins, [{ from: 7, to: 7, count: 2 }]);
 });
 
+test('niceTicks and binIndex: round axis values, and a histogram bin that matches the rows it counts', () => {
+  assert.deepEqual(C.niceTicks(87), [0, 25, 50, 75, 100]);
+  assert.deepEqual(C.niceTicks(177), [0, 50, 100, 150, 200]);
+  assert.deepEqual(C.niceTicks(3), [0, 1, 2, 3]);
+  assert.deepEqual(C.niceTicks(0), [0, 1]);
+  const rows = Array.from({ length: 50 }, (_, i) => [String(((i * 7) % 23) + 0.1)]);
+  const st = C.columnStats(rows, rows.map((_, i) => i), 0, { bins: 5 });
+  st.bins.forEach((b, k) => {
+    const inBin = rows.filter((r) => C.binIndex(C.asNumber(r[0]), st.min, st.width, st.bins.length) === k).length;
+    assert.equal(inBin, b.count);
+  });
+});
+
 test('signature: changes when a file is added, renamed or removed, not when one is only edited', async () => {
   const sig = async (...entries) => C.signature(C.flatten(await C.buildTree(dir('r', entries), ['r'])));
   const base = await sig(file('a.md'), dir('d', [file('b.md')]));

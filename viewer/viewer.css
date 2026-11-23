@@ -1115,7 +1115,7 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border-radius: 6px;
   background: var(--code-bg);
 }
-#markdown-body .chart-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+#markdown-body .chart-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 8px; }
 #markdown-body .chart-head select {
   padding: 4px 8px;
   font-size: 0.8rem;
@@ -1124,29 +1124,42 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border: 1px solid var(--border);
   border-radius: 6px;
 }
-#markdown-body .chart-note { font-size: 0.8rem; color: var(--muted); }
+#markdown-body .chart-note { flex: 1; min-width: 12ch; font-size: 0.8rem; text-align: right; color: var(--muted); }
+#markdown-body .chart-empty, #markdown-body .chart-foot { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); }
 #markdown-body .chart-bars { list-style: none; margin: 0; padding: 0; }
 #markdown-body .chart-bars li { margin: 0; padding: 0; }
 #markdown-body .bar-row {
   all: unset;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(8ch, 22ch) 1fr 5ch;
+  grid-template-columns: minmax(8ch, 22ch) 1fr 5ch 4ch;
   align-items: center;
   gap: 10px;
   width: 100%;
   padding: 2px 4px;
   font-size: 0.8rem;
   color: var(--fg);
+  cursor: pointer;
+  border-radius: 4px;
 }
-#markdown-body button.bar-row { cursor: pointer; border-radius: 4px; }
-#markdown-body button.bar-row:hover { background: var(--sidebar-hover-bg); }
-#markdown-body button.bar-row:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+#markdown-body .bar-row:hover { background: var(--sidebar-hover-bg); }
+#markdown-body .bar-row:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
 #markdown-body .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #markdown-body .bar-track { height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--fg) 8%, transparent); }
 #markdown-body .bar-fill { display: block; height: 100%; border-radius: 3px; background: color-mix(in srgb, var(--link) 70%, var(--bg)); }
-#markdown-body .bar-n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
-#markdown-body .bar-other { padding: 4px 4px 0; font-size: 0.8rem; color: var(--muted); }
+#markdown-body .bar-n, #markdown-body .bar-pct { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+#markdown-body .plot { display: block; max-width: 100%; }
+#markdown-body .plot-grid { stroke: var(--border); stroke-width: 1; }
+#markdown-body .plot-tick { fill: var(--muted); font-size: 11px; }
+#markdown-body .plot-bar { fill: color-mix(in srgb, var(--link) 70%, var(--bg)); }
+#markdown-body .plot-bar.is-hot { fill: var(--link); }
+#markdown-body .plot-area { fill: color-mix(in srgb, var(--link) 14%, transparent); stroke: none; }
+#markdown-body .plot-line { fill: none; stroke: var(--link); stroke-width: 2; stroke-linejoin: round; }
+#markdown-body .plot-dot { fill: var(--bg); stroke: var(--link); stroke-width: 2; }
+#markdown-body .plot-dot.is-hot { fill: var(--link); r: 5; }
+#markdown-body .plot-hit { fill: transparent; cursor: pointer; outline: none; }
+#markdown-body .plot-hit:hover { fill: color-mix(in srgb, var(--link) 8%, transparent); }
+#markdown-body .plot-hit:focus-visible { stroke: var(--link); stroke-width: 2; }
 #markdown-body .sort-head {
   all: unset;
   box-sizing: border-box;

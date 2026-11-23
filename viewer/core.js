@@ -91,7 +91,7 @@ export function parseDelimited(text, delim) {
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-const asNumber = (s) => { const n = s.trim() === '' ? NaN : Number(s); return Number.isFinite(n) ? n : null; };
+export const asNumber = (s) => { const n = s.trim() === '' ? NaN : Number(s); return Number.isFinite(n) ? n : null; };
 
 /** Numbers before text, numbers by value, text in natural order ("a2" < "a10"). */
 function compareCells(a, b) {
@@ -167,6 +167,18 @@ export function rowKey(cells) {
   return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36);
 }
 
+/** Which of `bins` equal-width bins starting at `min` a number falls in; the largest value lands in the last. */
+export const binIndex = (n, min, width, bins) => Math.min(bins - 1, Math.floor((n - min) / width));
+
+/** Round axis values from 0 up to just past `max`: niceTicks(87) → [0, 25, 50, 75, 100]. */
+export function niceTicks(max, count = 4) {
+  if (!(max > 0)) return [0, 1];
+  const raw = max / count;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => +(i * step).toFixed(10));
+}
+
 /**
  * What a column holds across the rows `idx`: a histogram when every filled cell is a number, otherwise the
  * `top` most common values with their counts (and how many rows the rest hold).
@@ -181,9 +193,9 @@ export function columnStats(rows, idx, col, { top = 12, bins = 10 } = {}) {
     const max = nums.reduce((a, b) => Math.max(a, b));
     const width = (max - min) / bins || 1;
     const counts = new Array(max === min ? 1 : bins).fill(0);
-    for (const n of nums) counts[Math.min(counts.length - 1, Math.floor((n - min) / width))]++;
+    for (const n of nums) counts[binIndex(n, min, width, counts.length)]++;
     const edge = (b) => (b === counts.length ? max : min + b * width);
-    return { ...base, kind: 'numbers', bins: counts.map((count, b) => ({ from: edge(b), to: edge(b + 1), count })) };
+    return { ...base, kind: 'numbers', min, width, bins: counts.map((count, b) => ({ from: edge(b), to: edge(b + 1), count })) };
   }
   const tally = new Map();
   for (const v of filled) tally.set(v, (tally.get(v) || 0) + 1);
