@@ -10,10 +10,12 @@ import { reloadCurrent } from './reader.js';
 import { focusTableFilter } from './table.js';
 import { openPalette } from './palette.js';
 import { getSites, setSites } from './links.js';
+import { parseSites } from './core.js';
 
 const settingsBtn = document.getElementById('settings-btn');
 const settingsMenu = document.getElementById('settings-menu');
-const sitesEl = document.getElementById('s-sites');
+const sitesEl = document.getElementById('s-sites');        // the badges
+const siteInput = document.getElementById('s-site-input'); // where a site is typed
 
 export function isDark() {
   return document.documentElement.dataset.theme === 'dark';
@@ -27,6 +29,7 @@ const PREFS = {
   outline: { get: () => (tocOn() ? 'on' : 'off'), set: (v) => setToc(v === 'on') },
   tree:    { get: () => mainEl.dataset.tree, set: (v) => setTreeShown(v === 'on', true) },
   rows:    { get: () => pref.get('rows') ?? '500', set: setRows },
+  wrap:    { get: () => (pref.on('table-wrap', false) ? 'on' : 'off'), set: (v) => setWrapCells(v === 'on') },
 };
 
 setupMenu(settingsMenu, settingsBtn, showSettings, settingsBtn);
@@ -34,11 +37,37 @@ settingsMenu.addEventListener('click', (e) => {
   const b = e.target.closest('[data-pref]');
   if (b) apply(b.dataset.pref, b.dataset.value);
 });
-sitesEl.addEventListener('change', () => {
-  setSites(sitesEl.value);
-  sitesEl.value = getSites().join('\n');
+
+// Trusted sites are badges: type a domain (then Enter, a space or a comma; a pasted list works too) to add, × to remove.
+const saveSites = (sites) => {
+  setSites(sites.join('\n'));
+  renderSites();
   if (state.currentHandle) reloadCurrent(); // redraws the open file with the new list
+};
+const addSites = () => {
+  const added = parseSites(siteInput.value);
+  siteInput.value = '';
+  if (added.length) saveSites([...getSites(), ...added]);
+};
+siteInput.addEventListener('input', () => { if (/[\s,]/.test(siteInput.value)) addSites(); });
+siteInput.addEventListener('change', addSites); // Enter, or leaving the box
+sitesEl.addEventListener('click', (e) => {
+  const remove = e.target.closest('button[data-site]');
+  if (remove) { saveSites(getSites().filter((site) => site !== remove.dataset.site)); siteInput.focus(); }
+  else if (e.target === sitesEl) siteInput.focus();
 });
+
+function renderSites() {
+  sitesEl.querySelectorAll('.s-chip').forEach((chip) => chip.remove());
+  for (const site of getSites()) {
+    const remove = Object.assign(document.createElement('button'), { type: 'button', textContent: '×', ariaLabel: `Remove ${site}` });
+    remove.dataset.site = site;
+    const chip = document.createElement('span');
+    chip.className = 's-chip';
+    chip.append(site, remove);
+    siteInput.before(chip);
+  }
+}
 
 function apply(name, value) {
   PREFS[name].set(value);
@@ -49,12 +78,17 @@ function showSettings() {
   settingsMenu.querySelectorAll('[data-pref]').forEach((b) => {
     b.setAttribute('aria-pressed', String(PREFS[b.dataset.pref].get() === b.dataset.value));
   });
-  if (document.activeElement !== sitesEl) sitesEl.value = getSites().join('\n');
+  renderSites();
 }
 
 function setRows(rows) {
   pref.set('rows', rows);
   if (state.currentHandle) reloadCurrent(); // redraws an open table with the new page size
+}
+
+function setWrapCells(on) {
+  pref.setOn('table-wrap', on);
+  if (state.currentHandle) reloadCurrent(); // redraws an open table
 }
 
 function setTheme(theme) {

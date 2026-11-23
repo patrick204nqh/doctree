@@ -879,7 +879,7 @@ details:has(.tree-file.active) > .tree-dir .ico {
 .crumb-cur { flex: none; color: var(--fg); font-weight: 600; }
 
 /* ── Settings panel ───────────────────────────────────────────────────────── */
-#settings-menu { min-width: 300px; padding: 6px; }
+#settings-menu { min-width: 340px; padding: 6px; }
 .s-row {
   display: flex;
   align-items: center;
@@ -1300,19 +1300,96 @@ a.video-card small { padding-bottom: 8px; color: var(--muted); }
 #link-card[hidden] { display: none; }
 #link-card p { margin: 4px 0; color: var(--fg); }
 #link-card small { color: var(--muted); }
-.s-sites { flex-direction: column; align-items: stretch; gap: 4px; }
+.s-title { margin: 0; padding: 4px 8px 2px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.s-title small { margin-left: 4px; font-size: 0.75rem; font-weight: 400; }
 .s-row small { color: var(--muted); }
-.s-sites small { font-size: 0.75rem; line-height: 1.4; }
-.s-sites textarea {
-  font: inherit;
+.s-sites { padding-bottom: 6px; }
+.s-head { position: relative; display: flex; align-items: center; gap: 2px; }
+.s-info {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: help;
+}
+.s-info:hover, .s-info:focus-visible { color: var(--fg); }
+.s-info:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+.s-tip {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 8px;
+  z-index: 1;
+  display: none;
+  width: min(270px, calc(100% - 16px));
+  padding: 8px 10px;
   font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--fg);
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 4px 6px;
-  resize: vertical;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.2);
 }
+.s-info:hover + .s-tip, .s-info:focus-visible + .s-tip { display: block; }
+.s-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-height: 9rem;
+  margin: 4px 8px 0;
+  padding: 6px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: text;
+}
+.s-chips:focus-within { border-color: var(--link); }
+.s-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 2px 1px 9px;
+  font-size: 0.8rem;
+  color: var(--fg);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.s-chip button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font: inherit;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.s-chip button:hover { color: var(--fg); background: var(--sidebar-hover-bg); }
+.s-chip button:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+.s-chips input {
+  flex: 1 1 6rem;
+  min-width: 6rem;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--fg);
+  background: none;
+  border: 0;
+  outline: none;
+}
+.s-chips input:focus-visible { outline: none; } /* the box around the badges shows focus instead */
 
 /* An image or media file: fits the reading area, centered; a viewBox-only SVG would otherwise fill the width and run off the bottom */
 #markdown-body img.picture, #markdown-body video.picture {

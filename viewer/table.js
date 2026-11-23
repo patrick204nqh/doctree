@@ -125,9 +125,8 @@ export function renderTable(text, delim, key) {
   const colBtn = menuButton('Columns', 'Show or hide columns');
   const colItems = head.map((_, i) => { const b = choice('menuitemcheckbox', label(i)); b.dataset.col = i; return b; });
   const showAllItem = make('button', { type: 'button', role: 'menuitem', textContent: 'Show all columns' });
-  const wrapItem = choice('menuitemcheckbox', 'Wrap long cells');
   const colMenu = popup(colBtn, () => syncColumns());
-  colMenu.append(...colItems, make('hr'), showAllItem, wrapItem);
+  colMenu.append(...colItems, make('hr'), showAllItem);
 
   const flagBtn = menuButton('Flags', 'Show flagged or unflagged rows');
   const flagChoices = ['all', 'flagged', 'unflagged', ...FLAGS];
@@ -194,7 +193,6 @@ export function renderTable(text, delim, key) {
       b.disabled = on && open === 1; // one column always stays
     });
     showAllItem.disabled = s.hidden.size === 0;
-    wrapItem.setAttribute('aria-checked', String(pref.on('table-wrap', false)));
   };
   const syncFlags = () => {
     flagItems.forEach((b) => {
@@ -285,11 +283,6 @@ export function renderTable(text, delim, key) {
     if (s.eq) eqChip.textContent = `${label(s.eq.col)} = ${s.eq.value} ×`;
     renderChart();
   };
-  const setWrap = (on) => {
-    pref.setOn('table-wrap', on);
-    wrap.classList.toggle('compact', !on);
-    syncColumns();
-  };
   const change = (patch) => { Object.assign(s, patch, { page: 0 }); update(); }; // a new filter or sort starts from the first page
   const turn = (by) => { s.page += by; update(); wrap.scrollTop = 0; };
   const tick = (positions, on) => {
@@ -314,7 +307,6 @@ export function renderTable(text, delim, key) {
     const item = e.target.closest('[role^="menuitem"]');
     if (!item || item.disabled) return;
     if (item.dataset.col !== undefined) toggleColumn(Number(item.dataset.col));
-    else if (item === wrapItem) setWrap(!pref.on('table-wrap', false));
     else { s.hidden.clear(); saveHidden(); applyHidden(); syncColumns(); change({}); }
   });
   flagMenu.addEventListener('click', (e) => {
