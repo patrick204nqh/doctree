@@ -12,6 +12,7 @@ import { bodyEl, copyContentBtn, state, pref } from './state.js';
 import { parseDelimited, tableView, toDelimited, rowKey, columnStats, asNumber, binIndex } from './core.js';
 import { flash, setupMenu } from './dom.js';
 import { drawBars, drawPlot, drawDonut, describe } from './chart.js';
+import { chartToCanvas } from './chart-png.js';
 
 const URL_CELL = /^https?:\/\/\S+$/i;
 const FLAGS = ['red', 'orange', 'green', 'blue', 'purple']; // colours a table row can be flagged with
@@ -166,9 +167,12 @@ export function renderTable(text, delim, key) {
   const typeBtns = ['bar', 'line', 'donut'].map((t) => { const b = make('button', { type: 'button', textContent: cap(t) }); b.dataset.type = t; return b; });
   const chartType = make('span', { className: 'seg', role: 'group', ariaLabel: 'Chart type' }, ...typeBtns);
   const chartNote = make('span', { className: 'chart-note' });
+  const copyImg = make('button', { type: 'button', className: 'btn', textContent: 'Copy image', title: 'Copy the chart as a picture to paste into a chat or document' });
+  const savePng = make('button', { type: 'button', className: 'btn', textContent: 'Save PNG', title: 'Download the chart as a PNG picture' });
+  const chartActions = make('span', { className: 'chart-actions' }, copyImg, savePng);
   const chartBody = make('div', { className: 'chart-body' });
   const chart = make('section', { className: 'table-chart', ariaLabel: 'Chart', hidden: true },
-    make('div', { className: 'chart-head' }, chartCol, chartTop, chartType, chartNote), chartBody);
+    make('div', { className: 'chart-head' }, chartCol, chartTop, chartType, chartNote, chartActions), chartBody);
 
   // the selection bar floats over the table's bottom edge; it comes before the rows so Tab reaches it first
   const view = make('div', { className: 'table-view' }, bar, chart, bulk, wrap, colMenu, flagMenu);
@@ -210,6 +214,22 @@ export function renderTable(text, delim, key) {
 
   let noteText = '';
   let plotWidth = 0;
+  let lastChart = null; // what is drawn, for Copy image and Save PNG; null when there is nothing to draw
+  // the first column whose values repeat (counting them says something), else the first number column, else the first
+  const usefulColumn = () => {
+    let numeric = -1;
+    for (let c = 0; c < head.length; c++) {
+      const st = columnStats(rows, shown, c, { top: 1 });
+      if (st.kind === 'text' && st.distinct < (st.total - st.empty) / 2) return c;
+      if (st.kind === 'numbers' && numeric < 0) numeric = c;
+    }
+    return Math.max(numeric, 0);
+  };
+  const filterText = () => [
+    s.query.trim() && `filter “${s.query.trim()}”`,
+    s.eq && `${label(s.eq.col)} = ${s.eq.label ?? s.eq.value}`,
+    s.flag !== 'all' && `flags: ${flagLabel(s.flag)}`,
+  ].filter(Boolean).join(' · ');
   const renderChart = () => {
     chart.hidden = !s.chart.open;
     chartBtn.setAttribute('aria-pressed', String(s.chart.open));
@@ -231,6 +251,8 @@ export function renderTable(text, delim, key) {
     chartNote.textContent = noteText;
     if (!filled) {
       chartBody.replaceChildren(make('p', { className: 'chart-empty', textContent: st.total ? 'This column is empty in the matching rows.' : 'No rows match the filter.' }));
+      lastChart = null;
+      chartActions.hidden = true;
       return;
     }
     const points = st.kind === 'text'
@@ -250,6 +272,17 @@ export function renderTable(text, delim, key) {
     else if (st.kind === 'text' && kind === 'bar') drawBars(chartBody, points, { onPick: pick });
     else drawPlot(chartBody, points, { type: kind, width: plotWidth, onPick: pick, onHover: hover });
     if (st.other && kind !== 'donut') chartBody.append(make('p', { className: 'chart-foot', textContent: `${st.other.toLocaleString()} more rows in ${otherValues.toLocaleString()} other values` }));
+    const shape = kind === 'donut' ? 'donut' : st.kind === 'text' && kind === 'bar' ? 'bars' : kind === 'line' ? 'line' : 'columns';
+    const file = key.split('/').at(-1);
+    const rowsText = shown.length === rows.length ? `${rows.length.toLocaleString()} rows` : `${shown.length.toLocaleString()} of ${rows.length.toLocaleString()} rows`;
+    lastChart = {
+      shape, points,
+      title: `${label(col)} · ${st.kind === 'text' ? 'most common values' : 'distribution'}`,
+      subtitle: [file, rowsText, filterText()].filter(Boolean).join(' · '),
+      note: st.other && kind !== 'donut' ? `${st.other.toLocaleString()} more rows in ${otherValues.toLocaleString()} other values` : '',
+      name: `${file.replace(/\.[^.]*$/, '')}-${label(col)}-${shape}`,
+    };
+    chartActions.hidden = false;
   };
   // the plot is drawn to the panel's width: draw again when the panel is attached or resized
   new ResizeObserver(() => { if (s.chart.open && chartBody.clientWidth && Math.abs(chartBody.clientWidth - plotWidth) > 1) renderChart(); }).observe(chartBody);
@@ -335,8 +368,31 @@ export function renderTable(text, delim, key) {
     flagMenu.hidePopover();
     change({ flag: item.dataset.flag });
   });
-  chartBtn.addEventListener('click', () => { s.chart.open = !s.chart.open; update(); });
-  chartCol.addEventListener('change', () => { s.chart.col = Number(chartCol.value); renderChart(); });
+  chartBtn.addEventListener('click', () => {
+    s.chart.open = !s.chart.open;
+    if (s.chart.open && !s.chart.chosen) s.chart.col = usefulColumn(); // until you pick a column, open on one worth counting
+    update();
+  });
+  chartCol.addEventListener('change', () => { s.chart.col = Number(chartCol.value); s.chart.chosen = true; renderChart(); });
+  const chartBlob = () => new Promise((resolve, reject) => {
+    chartToCanvas(lastChart).toBlob((blob) => (blob ? resolve(blob) : reject(new Error('The picture could not be made'))), 'image/png');
+  });
+  copyImg.addEventListener('click', async () => {
+    if (!lastChart) return;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': chartBlob() })]);
+      flash(copyImg);
+    } catch (err) {
+      console.warn('[Doctree] copy failed:', err);
+    }
+  });
+  savePng.addEventListener('click', async () => {
+    if (!lastChart) return;
+    const url = URL.createObjectURL(await chartBlob());
+    make('a', { href: url, download: `${lastChart.name.replace(/[^\w.-]+/g, '-')}.png` }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    flash(savePng, 'Saved');
+  });
   chartTop.addEventListener('change', () => { s.chart.top = Number(chartTop.value); renderChart(); });
   chartType.addEventListener('click', (e) => {
     const b = e.target.closest('button');

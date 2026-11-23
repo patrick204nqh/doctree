@@ -1143,6 +1143,9 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border-radius: 6px;
 }
 #markdown-body .chart-note { flex: 1; min-width: 12ch; font-size: 0.8rem; text-align: right; color: var(--muted); }
+#markdown-body .chart-actions { display: inline-flex; gap: 6px; }
+#markdown-body .chart-actions .btn { margin-top: 0; }
+#markdown-body .plot-value { fill: var(--fg); font-size: 11px; }
 #markdown-body .chart-empty, #markdown-body .chart-foot { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); }
 #markdown-body .chart-bars { list-style: none; margin: 0; padding: 0; }
 #markdown-body .chart-bars li { margin: 0; padding: 0; }

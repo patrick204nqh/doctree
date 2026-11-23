@@ -16,7 +16,9 @@ const svg = (tag, attrs, ...kids) => {
   el.append(...kids);
   return el;
 };
-const pct = (share) => `${share > 0 && share < 0.01 ? '<1' : Math.round(share * 100)}%`;
+export const pct = (share) => `${share > 0 && share < 0.01 ? '<1' : Math.round(share * 100)}%`;
+/** The CSS variable holding a point's colour in a donut or its image: eight series colours, then grey for "Other". */
+export const seriesVar = (p, i) => (p.other ? '--series-other' : `--series-${i % 8}`);
 const clip = (text, max) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
 /** "Item 4 · 12 rows · 3%" */
@@ -45,7 +47,7 @@ export function drawBars(body, points, { onPick }) {
  */
 export function drawPlot(body, points, { type, width, onPick, onHover }) {
   const H = 200;
-  const edge = { l: 46, r: 12, t: 10, b: 30 };
+  const edge = { l: 46, r: 12, t: 22, b: 30 };
   const W = Math.max(320, width);
   const plotW = W - edge.l - edge.r;
   const plotH = H - edge.t - edge.b;
@@ -56,6 +58,7 @@ export function drawPlot(body, points, { type, width, onPick, onHover }) {
   const x = (i) => edge.l + band * (i + 0.5);
 
   const root = svg('svg', { class: 'plot', viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'group', 'aria-label': 'Chart' });
+  root.append(svg('text', { class: 'plot-tick', x: 2, y: 12 }, 'rows'));
   for (const t of ticks) {
     root.append(
       svg('line', { class: 'plot-grid', x1: edge.l, x2: W - edge.r, y1: y(t), y2: y(t) }),
@@ -80,22 +83,31 @@ export function drawPlot(body, points, { type, width, onPick, onHover }) {
     marks = points.map((p, i) => svg('rect', { class: 'plot-bar', x: x(i) - w / 2, y: y(p.n), width: w, height: Math.max(0, edge.t + plotH - y(p.n)), rx: 2 }));
   }
   root.append(...marks);
+  if (points.length <= 12) { // few enough points for their counts to fit above them
+    points.forEach((p, i) => root.append(svg('text', { class: 'plot-value', x: x(i), y: y(p.n) - 8, 'text-anchor': 'middle' }, p.n.toLocaleString())));
+  }
 
-  points.forEach((p, i) => {
+  // one Tab stop for the whole plot; the arrow keys, Home and End move between points
+  const hits = points.map((p, i) => {
     const hit = svg('rect', {
       class: 'plot-hit', x: edge.l + band * i, y: edge.t, width: band, height: plotH,
-      tabindex: 0, role: 'button', 'aria-label': `${describe(p)}. Show only these rows`,
+      tabindex: i === 0 ? 0 : -1, role: 'button', 'aria-label': `${describe(p)}. Show only these rows`,
     });
     const on = () => { marks[i].classList.add('is-hot'); onHover(p); };
     const off = () => { marks[i].classList.remove('is-hot'); onHover(null); };
     hit.addEventListener('pointerenter', on);
     hit.addEventListener('pointerleave', off);
-    hit.addEventListener('focus', on);
+    hit.addEventListener('focus', () => { hits.forEach((h, j) => h.setAttribute('tabindex', j === i ? 0 : -1)); on(); });
     hit.addEventListener('blur', off);
     hit.addEventListener('click', () => onPick(p));
-    hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(p); } });
-    root.append(hit);
+    hit.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(p); return; }
+      const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: points.length - 1 }[e.key];
+      if (to !== undefined && hits[to]) { e.preventDefault(); hits[to].focus(); }
+    });
+    return hit;
   });
+  root.append(...hits);
   body.replaceChildren(root);
 }
 
@@ -120,7 +132,7 @@ export function drawDonut(body, points, { onPick, onHover }) {
       ? svg('circle', { cx: mid, cy: mid, r: (outer + inner) / 2, 'stroke-width': outer - inner }) // one value: a whole ring
       : svg('path', { d: `M${at(outer, from)} A${outer},${outer} 0 ${big} 1 ${at(outer, to)} L${at(inner, to)} A${inner},${inner} 0 ${big} 0 ${at(inner, from)} Z` });
     slice.setAttribute('class', 'donut-slice');
-    slice.style.setProperty('--slice', p.other ? 'var(--series-other)' : `var(--series-${i % 8})`);
+    slice.style.setProperty('--slice', `var(${seriesVar(p, i)})`);
     from = to;
     return slice;
   });
