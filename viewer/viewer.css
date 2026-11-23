@@ -1036,8 +1036,28 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #markdown-body .table-pager { display: inline-flex; gap: 4px; }
 #markdown-body .table-pager[hidden] { display: none; }
 #markdown-body .table-pager .btn { min-width: 2rem; }
-#markdown-body .table-bulk { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+#markdown-body .table-bulk {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  white-space: nowrap;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+  transform: translateX(-50%);
+  animation: bulk-in 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+@keyframes bulk-in { from { opacity: 0; transform: translate(-50%, 6px); } }
+@media (prefers-reduced-motion: reduce) { #markdown-body .table-bulk { animation: none; } }
 #markdown-body .bulk-count { font-size: 0.8rem; color: var(--fg); }
+#markdown-body .table-bulk .btn { margin-top: 0; }
+#markdown-body .table-view.has-bulk .table-wrap { padding-bottom: 3.5rem; }
 #markdown-body .flag-swatches { display: inline-flex; }
 #markdown-body .flag-swatch {
   all: unset;
@@ -1072,6 +1092,7 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #markdown-body tr[data-flag] td { background: color-mix(in srgb, var(--flag) 16%, var(--bg)); }
 #markdown-body tr.picked td { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--link) 12%, transparent); }
 #markdown-body .table-view {
+  position: relative;
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 140px);

@@ -146,17 +146,17 @@ export function renderTable(text, delim, key) {
   const eqChip = make('button', { type: 'button', className: 'btn eq-chip', title: 'Show all rows again' });
   const count = make('span', { className: 'table-count' });
 
-  const picked = make('span', { className: 'bulk-count' });
+  const picked = make('span', { className: 'bulk-count', role: 'status' });
   const copyPick = make('button', { type: 'button', className: 'btn', textContent: 'Copy', title: 'Copy the selected rows' });
   const swatches = make('span', { className: 'flag-swatches', role: 'group', ariaLabel: 'Flag the selected rows' },
     ...FLAGS.map((c) => { const b = make('button', { type: 'button', className: 'flag-swatch', ariaLabel: `Flag ${c}`, title: `Flag ${c}` }); b.dataset.color = c; return b; }),
     make('button', { type: 'button', className: 'flag-swatch none', textContent: '×', ariaLabel: 'Remove flag', title: 'Remove flag' }));
   const clearPick = make('button', { type: 'button', className: 'btn', textContent: 'Clear', title: 'Clear the selection' });
-  const bulk = make('span', { className: 'table-bulk', hidden: true }, picked, copyPick, swatches, clearPick);
+  const bulk = make('div', { className: 'table-bulk', role: 'toolbar', ariaLabel: 'Selected rows', hidden: true }, picked, copyPick, swatches, clearPick);
   const prevBtn = make('button', { type: 'button', className: 'btn', textContent: '‹', ariaLabel: 'Previous page', title: 'Previous page' });
   const nextBtn = make('button', { type: 'button', className: 'btn', textContent: '›', ariaLabel: 'Next page', title: 'Next page' });
   const pager = make('span', { className: 'table-pager' }, prevBtn, nextBtn);
-  const bar = make('div', { className: 'table-bar' }, query, colBtn, flagBtn, eqChip, chartBtn, count, bulk, pager);
+  const bar = make('div', { className: 'table-bar' }, query, colBtn, flagBtn, eqChip, chartBtn, count, pager);
 
   // ── The chart panel ──
   const chartCol = make('select', { ariaLabel: 'Chart column', title: 'Chart column' }, ...head.map((_, i) => new Option(label(i), i)));
@@ -165,7 +165,8 @@ export function renderTable(text, delim, key) {
   const chart = make('section', { className: 'table-chart', ariaLabel: 'Chart', hidden: true },
     make('div', { className: 'chart-head' }, chartCol, chartNote), chartBars);
 
-  const view = make('div', { className: 'table-view' }, bar, chart, wrap, colMenu, flagMenu);
+  // the selection bar floats over the table's bottom edge; it comes before the rows so Tab reaches it first
+  const view = make('div', { className: 'table-view' }, bar, chart, bulk, wrap, colMenu, flagMenu);
 
   // ── What is shown ──
   const flagTest = () => (s.flag === 'all' ? null : (i) => {
@@ -246,7 +247,7 @@ export function renderTable(text, delim, key) {
     Object.assign(flagCounts, { all: rows.length, flagged, unflagged: rows.length - flagged });
     picked.textContent = `${picks.toLocaleString()} selected`;
     bulk.hidden = picks === 0;
-    count.hidden = picks > 0;
+    view.classList.toggle('has-bulk', picks > 0); // leaves room under the last row for the bar
     const ticked = shown.filter((i) => s.selected.has(keys[i])).length;
     pickAll.checked = ticked > 0 && ticked === shown.length;
     pickAll.indeterminate = ticked > 0 && ticked < shown.length;
