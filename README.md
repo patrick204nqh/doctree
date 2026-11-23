@@ -83,7 +83,7 @@ No folder to hand? Open [`examples/demo`](examples/demo) from this repository.
 | `.md` | Rendered Markdown (GFM, Mermaid diagrams, relative images, links between files). A leading `key: value` front matter block shows as a row of chips; a value that is a path to a file or folder in the open folder (`next: ../b/draft.md`) is a link |
 | `.html` | Rendered in a sandboxed frame: scripts run, but with no access to the extension or the folder. Relative stylesheets, scripts and images load from the folder, and links to other files open in Doctree |
 | `.json`, `.jsonl` | A tree: objects and arrays fold, the first two levels start open, and **Expand all** and **Collapse all** open or close the rest. Text that does not parse, or a file over 1 MB or about 20,000 values, shows as indented, highlighted text |
-| `.csv`, `.tsv` | A table with a sticky header row. Files over 1 MB show as text |
+| `.csv`, `.tsv` | A table with a sticky header row. Files over 5 MB show as text |
 | `.mmd`, `.mermaid` | A Mermaid diagram (strict mode, same as in Markdown). Files over 1 MB show as text |
 | `.rb`, `.py`, `.js`, `.ts`, `.sh`, `.rs`, `.go`, `.sql`, `.css`, `.xml`, `.yml`, `.yaml`, `.toml` | Source with syntax highlighting (no switch: this is the text) |
 | `.txt`, `.log` | Plain text, exactly as in the file (no switch) |

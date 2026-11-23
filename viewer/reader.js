@@ -18,7 +18,8 @@ import { decorateLinks } from './links.js';
 import { emojify } from './emoji.js';
 
 const TEXT_CAP = 256 * 1024; // bytes shown before "Show all"
-const FORMAT_CAP = 1024 * 1024; // largest file shown formatted (JSON, CSV); highlighting stops at twice this
+const FORMAT_CAP = 1024 * 1024; // largest file shown formatted (JSON, Mermaid); highlighting stops at twice this
+const TABLE_CAP = 5 * FORMAT_CAP; // CSV and TSV are shown as a table up to this size
 const RELOAD_CHECK_MS = 2000;
 let blobUrls = []; // object URLs to revoke on next file load
 let rawPath = null; // path of the file the reader switched to its raw text
@@ -159,7 +160,8 @@ async function toPng(file) {
 }
 
 async function renderFile(file, info, pathArr) {
-  const canPreview = PREVIEW.has(info.ext) && (UNCAPPED.has(info.ext) || file.size <= FORMAT_CAP);
+  const cap = info.ext === 'csv' || info.ext === 'tsv' ? TABLE_CAP : FORMAT_CAP;
+  const canPreview = PREVIEW.has(info.ext) && (UNCAPPED.has(info.ext) || file.size <= cap);
   const raw = rawPath === pathArr.join('/');
   fileMetaEl.textContent = `${info.label} · ${formatSize(file.size)}`;
   fileMetaEl.hidden = false;
