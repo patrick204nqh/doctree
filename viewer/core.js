@@ -141,6 +141,35 @@ export function rowKey(cells) {
   return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36);
 }
 
+/**
+ * What a column holds across the rows `idx`: a histogram when every filled cell is a number, otherwise the
+ * `top` most common values with their counts (and how many rows the rest hold).
+ */
+export function columnStats(rows, idx, col, { top = 12, bins = 10 } = {}) {
+  const values = idx.map((i) => rows[i][col] ?? '');
+  const filled = values.filter((v) => v !== '');
+  const base = { total: values.length, empty: values.length - filled.length };
+  const nums = filled.map(asNumber);
+  if (filled.length && nums.every((n) => n !== null)) {
+    const min = nums.reduce((a, b) => Math.min(a, b));
+    const max = nums.reduce((a, b) => Math.max(a, b));
+    const width = (max - min) / bins || 1;
+    const counts = new Array(max === min ? 1 : bins).fill(0);
+    for (const n of nums) counts[Math.min(counts.length - 1, Math.floor((n - min) / width))]++;
+    const edge = (b) => (b === counts.length ? max : min + b * width);
+    return { ...base, kind: 'numbers', bins: counts.map((count, b) => ({ from: edge(b), to: edge(b + 1), count })) };
+  }
+  const tally = new Map();
+  for (const v of filled) tally.set(v, (tally.get(v) || 0) + 1);
+  const sorted = [...tally].sort((a, b) => b[1] - a[1] || collator.compare(a[0], b[0]));
+  const common = sorted.slice(0, top);
+  return {
+    ...base, kind: 'text', distinct: sorted.length,
+    top: common.map(([value, count]) => ({ value, count })),
+    other: filled.length - common.reduce((n, [, c]) => n + c, 0),
+  };
+}
+
 const FM_SKIP = new Set(['schema', 'key']);                // front matter keys not worth a chip
 const INDEX_NAMES = ['index.md', 'readme.md', 'task.md'];  // a folder's entry file, first match wins
 const IGNORED_DIRS = new Set(['node_modules', '__pycache__']);

@@ -11,6 +11,7 @@
 - CSV and TSV: rows come in pages (100, 500, 1,000 or all; default 500, set in Settings → Rows per page) with ‹ › buttons and a range in the row count, so a large file opens and re-sorts quickly. Only the visible page is built in the DOM.
 - Settings: the Trusted sites hint is now a line of its own under the label, and says what the list does.
 - CSV and TSV: a checkbox column selects rows (shift-click for a range, the header box for every matching row). The selection bar copies them or flags them with one of five colours, and a **Flags** menu in the filter bar shows all, flagged, unflagged or one colour, so you can flag rows, clear the filter and compare. Flags are saved in the browser per folder and file, never written to the folder, and follow the row's content.
+- CSV and TSV: a **Chart** button charts one column of the matching rows, so it follows the filter. A text column shows its most common values with counts (click a bar to show only those rows; a chip in the bar clears it), a number column shows a histogram.
 
 ## 1.4.0 — 2026-11-18
 

@@ -266,6 +266,21 @@ test('rowKey: stable, depends on every cell and their boundaries; tableView keep
   assert.deepEqual(C.tableView(rows, { keep: (i) => i !== 1, query: 'c' }), [0]);
 });
 
+test('columnStats: histogram for number columns, most common values for text, empty cells counted apart', () => {
+  const rows = [['a', '1'], ['b', '1'], ['a', '10'], ['c', ''], ['a', '5']];
+  const all = rows.map((_, i) => i);
+  const text = C.columnStats(rows, all, 0, { top: 2 });
+  assert.equal(text.kind, 'text');
+  assert.deepEqual(text.top, [{ value: 'a', count: 3 }, { value: 'b', count: 1 }]);
+  assert.deepEqual([text.distinct, text.other, text.empty], [3, 1, 0]);
+  const num = C.columnStats(rows, all, 1, { bins: 3 });
+  assert.equal(num.kind, 'numbers');
+  assert.deepEqual(num.bins.map((b) => b.count), [2, 1, 1]); // 1,1 | 5 | 10 (the max lands in the last bin)
+  assert.equal(num.empty, 1);
+  assert.deepEqual(C.columnStats(rows, [0, 2], 1, { bins: 3 }).bins.length, 3);
+  assert.deepEqual(C.columnStats([['7'], ['7']], [0, 1], 0).bins, [{ from: 7, to: 7, count: 2 }]);
+});
+
 test('signature: changes when a file is added, renamed or removed, not when one is only edited', async () => {
   const sig = async (...entries) => C.signature(C.flatten(await C.buildTree(dir('r', entries), ['r'])));
   const base = await sig(file('a.md'), dir('d', [file('b.md')]));

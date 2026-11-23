@@ -6,7 +6,7 @@
 import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn, pref } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG, isHexColor,
-  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, tableView, toDelimited, rowKey, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
+  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, tableView, toDelimited, rowKey, columnStats, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
 } from './core.js';
 import { flash } from './dom.js';
 import { buildToc } from './outline.js';
@@ -595,7 +595,7 @@ function renderTable(text, delim, key) {
 
   const saved = tableStates.get(key);
   const keep = saved && saved.col < head.length && saved.sortCol < head.length;
-  const s = keep ? saved : { query: '', col: -1, sortCol: -1, desc: false, page: 0, flag: 'all', selected: new Set() };
+  const s = keep ? saved : { query: '', col: -1, sortCol: -1, desc: false, page: 0, flag: 'all', eq: null, chart: { open: false, col: 0 }, selected: new Set() };
   const size = rowsPerPage();
   if (s.size !== size) s.page = 0; // a new page size starts from the first page
   s.size = size;
@@ -646,17 +646,64 @@ function renderTable(text, delim, key) {
   const prevBtn = make('button', { type: 'button', className: 'btn', textContent: '‹', ariaLabel: 'Previous page', title: 'Previous page' });
   const nextBtn = make('button', { type: 'button', className: 'btn', textContent: '›', ariaLabel: 'Next page', title: 'Next page' });
   const pager = make('span', { className: 'table-pager' }, prevBtn, nextBtn);
-  const bar = make('div', { className: 'table-bar' }, query, colSel, flagSel, wrapBtn, count, bulk, pager);
+  const chartBtn = make('button', { type: 'button', className: 'btn', textContent: 'Chart', title: 'Chart a column of the matching rows', disabled: head.length === 0 });
+  const eqChip = make('button', { type: 'button', className: 'btn eq-chip', title: 'Show all rows again' });
+  const bar = make('div', { className: 'table-bar' }, query, colSel, flagSel, eqChip, wrapBtn, chartBtn, count, bulk, pager);
+  const chartCol = make('select', { ariaLabel: 'Chart column', title: 'Chart column' }, ...head.map((_, i) => new Option(label(i), i)));
+  const chartNote = make('span', { className: 'chart-note' });
+  const chartBars = make('ol', { className: 'chart-bars' });
+  const chart = make('section', { className: 'table-chart', ariaLabel: 'Chart', hidden: true },
+    make('div', { className: 'chart-head' }, chartCol, chartNote), chartBars);
   const wrap = make('div', { className: 'table-wrap' }, table);
+  const view = make('div', { className: 'table-view' }, bar, chart, wrap);
 
   const flagTest = () => (s.flag === 'all' ? null : (i) => {
     const color = flags[keys[i]];
     return s.flag === 'flagged' ? Boolean(color) : s.flag === 'unflagged' ? !color : color === s.flag;
   });
-  const matching = () => tableView(rows, { ...s, keep: flagTest() });
+  // `eq` is a chart bar's value: only rows whose cell in that column is exactly it
+  const matching = () => {
+    const byFlag = flagTest();
+    const eq = s.eq;
+    const keepRow = byFlag && eq ? (i) => byFlag(i) && rows[i][eq.col] === eq.value
+      : eq ? (i) => rows[i][eq.col] === eq.value : byFlag;
+    return tableView(rows, { ...s, keep: keepRow });
+  };
   let shown = [];   // every matching row, in display order
   let onPage = [];  // the rows on the current page
   let last = -1;    // position in `shown` of the last row ticked, for shift-click ranges
+
+  const renderChart = () => {
+    chart.hidden = !s.chart.open;
+    chartBtn.setAttribute('aria-pressed', String(s.chart.open));
+    if (!s.chart.open) return;
+    const col = s.chart.col;
+    const st = columnStats(rows, shown, col);
+    const num = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const rowsNote = `${st.total.toLocaleString()} row${st.total === 1 ? '' : 's'}${st.empty ? ` · ${st.empty.toLocaleString()} empty` : ''}`;
+    chartCol.value = String(col);
+    const line = (labelText, n, widest, item) => {
+      const fill = make('span', { className: 'bar-fill' });
+      fill.style.width = `${widest ? (n / widest) * 100 : 0}%`;
+      return make('li', {}, make(item.tag, item.props, make('span', { className: 'bar-label', textContent: labelText, title: labelText }),
+        make('span', { className: 'bar-track' }, fill), make('span', { className: 'bar-n', textContent: n.toLocaleString() })));
+    };
+    if (st.kind === 'numbers') {
+      chartNote.textContent = `${num(st.bins[0].from)} to ${num(st.bins.at(-1).to)} · ${rowsNote}`;
+      const widest = Math.max(...st.bins.map((b) => b.count));
+      chartBars.replaceChildren(...st.bins.map((b) => line(`${num(b.from)} – ${num(b.to)}`, b.count, widest, { tag: 'div', props: { className: 'bar-row' } })));
+    } else {
+      chartNote.textContent = `${st.distinct.toLocaleString()} distinct · ${rowsNote}`;
+      const widest = st.top[0]?.count ?? 0;
+      const items = st.top.map((t) => {
+        const li = line(t.value, t.count, widest, { tag: 'button', props: { type: 'button', className: 'bar-row', title: `Show only rows where ${label(col)} is “${t.value}”` } });
+        li.firstChild.dataset.value = t.value;
+        return li;
+      });
+      if (st.other) items.push(make('li', { className: 'bar-other', textContent: `${st.other.toLocaleString()} more rows in ${(st.distinct - st.top.length).toLocaleString()} other values` }));
+      chartBars.replaceChildren(...items);
+    }
+  };
 
   const refresh = () => {
     const counts = {};
@@ -703,6 +750,9 @@ function renderTable(text, delim, key) {
       th.firstChild.title = !on ? 'Sort ascending' : !s.desc ? 'Sort descending' : 'Back to file order';
     });
     refresh();
+    eqChip.hidden = !s.eq;
+    if (s.eq) { eqChip.textContent = `${label(s.eq.col)} = ${s.eq.value} ×`; }
+    renderChart();
   };
   const setWrap = (on) => {
     wrap.classList.toggle('compact', !on);
@@ -721,6 +771,13 @@ function renderTable(text, delim, key) {
   query.addEventListener('keydown', (e) => { if (e.key === 'Escape' && query.value) { query.value = ''; change({ query: '' }); } });
   colSel.addEventListener('change', () => change({ col: Number(colSel.value) }));
   flagSel.addEventListener('change', () => change({ flag: flagSel.value }));
+  chartBtn.addEventListener('click', () => { s.chart.open = !s.chart.open; update(); });
+  chartCol.addEventListener('change', () => { s.chart.col = Number(chartCol.value); renderChart(); });
+  chartBars.addEventListener('click', (e) => {
+    const hit = e.target.closest('button.bar-row');
+    if (hit) change({ eq: { col: s.chart.col, value: hit.dataset.value } });
+  });
+  eqChip.addEventListener('click', () => change({ eq: null }));
   wrapBtn.addEventListener('click', () => { const on = !pref.on('table-wrap', false); pref.setOn('table-wrap', on); setWrap(on); });
   prevBtn.addEventListener('click', () => turn(-1));
   nextBtn.addEventListener('click', () => turn(1));
@@ -762,7 +819,7 @@ function renderTable(text, delim, key) {
   setWrap(pref.on('table-wrap', false));
   tableCopy = () => toDelimited([head, ...matching().map((i) => rows[i])], delim);
   copyContentBtn.title = 'Copy the matching rows, every page';
-  bodyEl.replaceChildren(bar, wrap);
+  bodyEl.replaceChildren(view);
 }
 
 /**
