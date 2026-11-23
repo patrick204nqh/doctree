@@ -34,6 +34,15 @@
   --flag-green: #2f8a4b;
   --flag-blue: #2a6fb8;
   --flag-purple: #7d4cc0;
+  --series-0: #4f7a12;
+  --series-1: #2a6fb8;
+  --series-2: #b9770e;
+  --series-3: #7d4cc0;
+  --series-4: #1d8a85;
+  --series-5: #c4456b;
+  --series-6: #8a5a3c;
+  --series-7: #5f7a9a;
+  --series-other: #9a9588;
 }
 
 :root[data-theme="dark"] {
@@ -59,6 +68,15 @@
   --flag-green: #6fcf8e;
   --flag-blue: #6cb0f2;
   --flag-purple: #b99bf0;
+  --series-0: #b8e65c;
+  --series-1: #6cb0f2;
+  --series-2: #f5b45c;
+  --series-3: #b99bf0;
+  --series-4: #5fd0c8;
+  --series-5: #f08aa8;
+  --series-6: #d1a27c;
+  --series-7: #9ab6d6;
+  --series-other: #5b6168;
 }
 
 html {
@@ -1160,6 +1178,34 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #markdown-body .plot-hit { fill: transparent; cursor: pointer; outline: none; }
 #markdown-body .plot-hit:hover { fill: color-mix(in srgb, var(--link) 8%, transparent); }
 #markdown-body .plot-hit:focus-visible { stroke: var(--link); stroke-width: 2; }
+#markdown-body .donut-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; }
+#markdown-body .donut { flex: none; display: block; }
+#markdown-body .donut-slice { fill: var(--slice); stroke: var(--code-bg); stroke-width: 1.5; cursor: pointer; transition: opacity 120ms; }
+#markdown-body circle.donut-slice { fill: none; stroke: var(--slice); }
+#markdown-body .donut.dim .donut-slice:not(.is-hot) { opacity: 0.4; }
+#markdown-body .donut-total { fill: var(--fg); font-size: 22px; font-weight: 600; }
+#markdown-body .donut-unit { fill: var(--muted); font-size: 11px; }
+#markdown-body .legend { flex: 1; min-width: 240px; max-width: 30rem; margin: 0; padding: 0; list-style: none; }
+#markdown-body .legend li { margin: 0; padding: 0; }
+#markdown-body .legend-row {
+  all: unset;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) 5ch 4ch;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 3px 4px;
+  font-size: 0.8rem;
+  color: var(--fg);
+  cursor: pointer;
+  border-radius: 4px;
+}
+#markdown-body .legend-row:hover { background: var(--sidebar-hover-bg); }
+#markdown-body .legend-row:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+#markdown-body .legend-row[aria-disabled="true"] { cursor: default; }
+#markdown-body .legend-swatch { width: 12px; height: 12px; border-radius: 3px; background: var(--slice); }
+@media (prefers-reduced-motion: reduce) { #markdown-body .donut-slice { transition: none; } }
 #markdown-body .sort-head {
   all: unset;
   box-sizing: border-box;

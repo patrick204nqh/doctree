@@ -98,3 +98,55 @@ export function drawPlot(body, points, { type, width, onPick, onHover }) {
   });
   body.replaceChildren(root);
 }
+
+const TAU = Math.PI * 2;
+
+/**
+ * A ring of slices with a legend of one row per slice. The legend rows are the keyboard way in (the slices are
+ * for the pointer), so each is a button that lights its slice on hover or focus and picks it on click.
+ * A point with `other: true` is hovered but not picked: it stands for every value without a slice of its own.
+ */
+export function drawDonut(body, points, { onPick, onHover }) {
+  const size = 180, mid = size / 2, outer = 84, inner = 54;
+  const total = points.reduce((n, p) => n + p.n, 0);
+  const at = (r, a) => `${mid + r * Math.sin(a)},${mid - r * Math.cos(a)}`; // angle a runs clockwise from 12 o'clock
+  const root = svg('svg', { class: 'donut', viewBox: `0 0 ${size} ${size}`, width: size, height: size, 'aria-hidden': 'true' });
+
+  let from = 0;
+  const slices = points.map((p, i) => {
+    const to = from + (p.n / total) * TAU;
+    const big = to - from > Math.PI ? 1 : 0;
+    const slice = p.n === total
+      ? svg('circle', { cx: mid, cy: mid, r: (outer + inner) / 2, 'stroke-width': outer - inner }) // one value: a whole ring
+      : svg('path', { d: `M${at(outer, from)} A${outer},${outer} 0 ${big} 1 ${at(outer, to)} L${at(inner, to)} A${inner},${inner} 0 ${big} 0 ${at(inner, from)} Z` });
+    slice.setAttribute('class', 'donut-slice');
+    slice.style.setProperty('--slice', p.other ? 'var(--series-other)' : `var(--series-${i % 8})`);
+    from = to;
+    return slice;
+  });
+  root.append(...slices,
+    svg('text', { class: 'donut-total', x: mid, y: mid + 2, 'text-anchor': 'middle' }, total.toLocaleString()),
+    svg('text', { class: 'donut-unit', x: mid, y: mid + 18, 'text-anchor': 'middle' }, 'rows'));
+
+  const on = (i) => { slices[i].classList.add('is-hot'); root.classList.add('dim'); onHover(points[i]); };
+  const off = (i) => { slices[i].classList.remove('is-hot'); root.classList.remove('dim'); onHover(null); };
+  const legend = points.map((p, i) => {
+    const row = html('button', { type: 'button', className: 'legend-row', title: p.pick ? `${describe(p)}\nShow only these rows` : describe(p) },
+      html('span', { className: 'legend-swatch' }),
+      html('span', { className: 'bar-label', textContent: p.label }),
+      html('span', { className: 'bar-n', textContent: p.n.toLocaleString() }),
+      html('span', { className: 'bar-pct', textContent: pct(p.share) }));
+    row.firstChild.style.setProperty('--slice', slices[i].style.getPropertyValue('--slice'));
+    if (!p.pick) row.setAttribute('aria-disabled', 'true');
+    row.addEventListener('pointerenter', () => on(i));
+    row.addEventListener('pointerleave', () => off(i));
+    row.addEventListener('focus', () => on(i));
+    row.addEventListener('blur', () => off(i));
+    row.addEventListener('click', () => onPick(p));
+    slices[i].addEventListener('pointerenter', () => on(i));
+    slices[i].addEventListener('pointerleave', () => off(i));
+    slices[i].addEventListener('click', () => onPick(p));
+    return html('li', {}, row);
+  });
+  body.replaceChildren(html('div', { className: 'donut-wrap' }, root, html('ol', { className: 'legend' }, ...legend)));
+}

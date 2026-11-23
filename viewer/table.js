@@ -11,11 +11,12 @@
 import { bodyEl, copyContentBtn, state, pref } from './state.js';
 import { parseDelimited, tableView, toDelimited, rowKey, columnStats, asNumber, binIndex } from './core.js';
 import { flash, setupMenu } from './dom.js';
-import { drawBars, drawPlot, describe } from './chart.js';
+import { drawBars, drawPlot, drawDonut, describe } from './chart.js';
 
 const URL_CELL = /^https?:\/\/\S+$/i;
 const FLAGS = ['red', 'orange', 'green', 'blue', 'purple']; // colours a table row can be flagged with
 const cap = (word) => word[0].toUpperCase() + word.slice(1);
+const DONUT_TOP = 8; // values with a slice of their own; the rest share "Other"
 const tableStates = new Map(); // file path → its table's filter, sort, page and selection
 
 /** Table rows per page (Settings → Rows per page); "all" is a page too big to fill. */
@@ -162,7 +163,7 @@ export function renderTable(text, delim, key) {
   // ── The chart panel ──
   const chartCol = make('select', { ariaLabel: 'Chart column', title: 'Chart column' }, ...head.map((_, i) => new Option(label(i), i)));
   const chartTop = make('select', { ariaLabel: 'Values shown', title: 'How many of the most common values to show' }, ...[10, 25, 50].map((n) => new Option(`Top ${n}`, n)));
-  const typeBtns = ['bar', 'line'].map((t) => { const b = make('button', { type: 'button', textContent: cap(t) }); b.dataset.type = t; return b; });
+  const typeBtns = ['bar', 'line', 'donut'].map((t) => { const b = make('button', { type: 'button', textContent: cap(t) }); b.dataset.type = t; return b; });
   const chartType = make('span', { className: 'seg', role: 'group', ariaLabel: 'Chart type' }, ...typeBtns);
   const chartNote = make('span', { className: 'chart-note' });
   const chartBody = make('div', { className: 'chart-body' });
@@ -214,13 +215,17 @@ export function renderTable(text, delim, key) {
     chartBtn.setAttribute('aria-pressed', String(s.chart.open));
     if (!s.chart.open) return;
     const { col, type, top } = s.chart;
-    const st = columnStats(rows, shown, col, { top });
+    const st = columnStats(rows, shown, col, { top: type === 'donut' ? DONUT_TOP : top });
     const num = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
     const filled = st.total - st.empty;
+    const kind = st.kind === 'text' ? type : type === 'line' ? 'line' : 'bar'; // a donut needs text values; a number column shows bars instead
     chartCol.value = String(col);
     chartTop.value = String(top);
-    chartTop.hidden = st.kind !== 'text';
-    typeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.type === type)));
+    chartTop.hidden = st.kind !== 'text' || kind === 'donut';
+    typeBtns.forEach((b) => {
+      b.hidden = b.dataset.type === 'donut' && st.kind !== 'text';
+      b.setAttribute('aria-pressed', String(b.dataset.type === kind));
+    });
     const span = st.kind === 'text' ? `${st.distinct.toLocaleString()} distinct` : `${num(st.min)} to ${num(st.bins.at(-1).to)}`;
     noteText = `${span} · ${st.total.toLocaleString()} row${st.total === 1 ? '' : 's'}${st.empty ? ` · ${st.empty.toLocaleString()} empty` : ''}`;
     chartNote.textContent = noteText;
@@ -234,11 +239,17 @@ export function renderTable(text, delim, key) {
         const name = `${num(b.from)} – ${num(b.to)}`;
         return { label: name, n: b.count, share: b.count / filled, pick: { col, bin: i, min: st.min, width: st.width, bins: st.bins.length, label: name } };
       });
-    const pick = (p) => change({ eq: p.pick });
+    const otherValues = st.kind === 'text' ? st.distinct - st.top.length : 0;
+    if (kind === 'donut' && st.other) {
+      points.push({ label: `Other (${otherValues.toLocaleString()} values)`, n: st.other, share: st.other / filled, other: true, pick: null });
+    }
+    const pick = (p) => p.pick && change({ eq: p.pick });
+    const hover = (p) => { chartNote.textContent = p ? describe(p) : noteText; };
     plotWidth = chartBody.clientWidth;
-    if (st.kind === 'text' && type === 'bar') drawBars(chartBody, points, { onPick: pick });
-    else drawPlot(chartBody, points, { type, width: plotWidth, onPick: pick, onHover: (p) => { chartNote.textContent = p ? describe(p) : noteText; } });
-    if (st.other) chartBody.append(make('p', { className: 'chart-foot', textContent: `${st.other.toLocaleString()} more rows in ${(st.distinct - st.top.length).toLocaleString()} other values` }));
+    if (kind === 'donut') drawDonut(chartBody, points, { onPick: pick, onHover: hover });
+    else if (st.kind === 'text' && kind === 'bar') drawBars(chartBody, points, { onPick: pick });
+    else drawPlot(chartBody, points, { type: kind, width: plotWidth, onPick: pick, onHover: hover });
+    if (st.other && kind !== 'donut') chartBody.append(make('p', { className: 'chart-foot', textContent: `${st.other.toLocaleString()} more rows in ${otherValues.toLocaleString()} other values` }));
   };
   // the plot is drawn to the panel's width: draw again when the panel is attached or resized
   new ResizeObserver(() => { if (s.chart.open && chartBody.clientWidth && Math.abs(chartBody.clientWidth - plotWidth) > 1) renderChart(); }).observe(chartBody);
