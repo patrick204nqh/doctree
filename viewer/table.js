@@ -117,7 +117,10 @@ export function renderTable(text, delim, key) {
   };
   const choice = (role, name, ...extra) => make('button', { type: 'button', role }, make('span', { className: 'm-check', ariaHidden: 'true' }), make('span', { className: 'm-name', textContent: name }), ...extra);
 
-  const query = make('input', { type: 'search', placeholder: 'Filter rows ( / )', autocomplete: 'off', ariaLabel: 'Filter rows', title: 'Filters on the visible columns', value: s.query });
+  const query = make('input', {
+    type: 'search', placeholder: 'Filter rows, or column:text ( / )', autocomplete: 'off', ariaLabel: 'Filter rows', value: s.query,
+    title: 'Every word must match. A plain word looks in the visible columns; column:text looks in that column only; "quotes" keep a phrase together; -word leaves matches out.',
+  });
 
   const colBtn = menuButton('Columns', 'Show or hide columns');
   const colItems = head.map((_, i) => { const b = choice('menuitemcheckbox', label(i)); b.dataset.col = i; return b; });
@@ -176,7 +179,7 @@ export function renderTable(text, delim, key) {
     const eq = s.eq;
     const keepRow = byFlag && eq ? (i) => byFlag(i) && rows[i][eq.col] === eq.value
       : eq ? (i) => rows[i][eq.col] === eq.value : byFlag;
-    return tableView(rows, { ...s, cols: s.hidden.size ? visible() : null, keep: keepRow });
+    return tableView(rows, { ...s, head, cols: s.hidden.size ? visible() : null, keep: keepRow });
   };
   let shown = [];   // every matching row, in display order
   let onPage = [];  // the rows on the current page

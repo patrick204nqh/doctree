@@ -250,6 +250,26 @@ test('tableView: filter by column or anywhere, sort numbers by value, text natur
   assert.deepEqual(names({ query: 'a', sortCol: 1, desc: true }), ['a', 'a2', 'a10']);
 });
 
+test('tableView filter syntax: column:text, several words, quoted phrases, exclusion, and URLs are not columns', () => {
+  const head = ['author', 'item_url', 'note'];
+  const rows = [
+    ['a@x.com', 'https://themeforest.net/a', 'big sale'],
+    ['b@x.com', 'https://codecanyon.net/b', 'themeforest fan'],
+    ['themeforest@y.com', 'https://codecanyon.net/c', ''],
+  ];
+  const hits = (query) => C.tableView(rows, { query, head }).join();
+  assert.equal(hits('themeforest'), '0,1,2');            // a plain word looks everywhere
+  assert.equal(hits('item_url:themeforest'), '0');       // a column word only in that column
+  assert.equal(hits('ITEM_URL:https://themeforest.net'), '0'); // "https" is not a column, the colon stays in the text
+  assert.equal(hits('item_url:codecanyon -author:b'), '2');
+  assert.equal(hits('-codecanyon'), '0');
+  assert.equal(hits('note:"big sale"'), '0');
+  assert.equal(hits('"big sale"'), '0');
+  assert.equal(hits('item_url:'), '0,1,2');              // nothing typed after the colon yet
+  assert.equal(hits('unknown:x'), '');                   // not a column: the whole word is searched
+  assert.equal(C.tableView(rows, { query: 'themeforest', head, cols: [1] }).join(), '0'); // plain words honour `cols`
+});
+
 test('toDelimited: quotes cells with the delimiter, quotes or line breaks, and round-trips parseDelimited', () => {
   const rows = [['name', 'note'], ['Smith, J', 'say "hi"'], ['a\nb', '']];
   assert.equal(C.toDelimited(rows, ','), 'name,note\n"Smith, J","say ""hi"""\n"a\nb",\n');

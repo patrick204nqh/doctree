@@ -102,16 +102,41 @@ function compareCells(a, b) {
 }
 
 /**
- * Which of `rows` to show, as indices in display order. `query` keeps rows whose cells in `cols` (every cell
- * when null) contain it, ignoring case; `keep(i)` tests a row first; `sortCol` (-1 for file order) sorts them,
- * empty cells last.
+ * The words of a table filter. A "quoted phrase" is one word. `name:text` limits a word to the column called
+ * `name` (any case; a prefix that is not a column, as in `https://x`, stays part of the text). A leading `-`
+ * excludes. A word with no text yet (`name:` mid-typing) is skipped.
  */
-export function tableView(rows, { query = '', cols = null, sortCol = -1, desc = false, keep = null } = {}) {
-  const q = query.trim().toLowerCase();
+export function parseFilter(query, head = []) {
+  const names = head.map((h) => h.toLowerCase());
+  return (query.match(/-?(?:[^\s"]+|"[^"]*")+/g) ?? []).flatMap((word) => {
+    const not = word.length > 1 && word.startsWith('-');
+    const body = (not ? word.slice(1) : word).replaceAll('"', '');
+    const at = body.indexOf(':');
+    const col = at > 0 ? names.indexOf(body.slice(0, at).toLowerCase()) : -1;
+    const text = (col >= 0 ? body.slice(at + 1) : body).toLowerCase();
+    return text ? [{ col, text, not }] : [];
+  });
+}
+
+/**
+ * Which of `rows` to show, as indices in display order. `query` is a filter (see parseFilter against `head`):
+ * every word must match, in the named column or, for a plain word, in any of `cols` (every cell when null),
+ * ignoring case. `keep(i)` tests a row first; `sortCol` (-1 for file order) sorts them, empty cells last.
+ */
+export function tableView(rows, { query = '', head = [], cols = null, sortCol = -1, desc = false, keep = null } = {}) {
+  const words = parseFilter(query, head);
   let idx = rows.map((_, i) => i);
   if (keep) idx = idx.filter(keep);
   // ponytail: rescans and lowercases every row per call; cache lowercased rows if 50k+ row files feel slow
-  if (q) idx = idx.filter((i) => (cols ? cols.map((c) => rows[i][c] ?? '').join('\t') : rows[i].join('\t')).toLowerCase().includes(q));
+  if (words.length) {
+    idx = idx.filter((i) => {
+      let all; // the row's searchable text, built once and only if a plain word needs it
+      return words.every((w) => {
+        const hay = w.col >= 0 ? rows[i][w.col] ?? '' : (all ??= (cols ? cols.map((c) => rows[i][c] ?? '') : rows[i]).join('\t'));
+        return hay.toLowerCase().includes(w.text) !== w.not;
+      });
+    });
+  }
   if (sortCol >= 0) {
     const sign = desc ? -1 : 1;
     idx.sort((a, b) => {
