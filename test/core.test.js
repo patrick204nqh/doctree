@@ -250,6 +250,22 @@ test('tableView: filter by column or anywhere, sort numbers by value, text natur
   assert.deepEqual(names({ query: 'a', sortCol: 1, desc: true }), ['a', 'a2', 'a10']);
 });
 
+test('toDelimited: quotes cells with the delimiter, quotes or line breaks, and round-trips parseDelimited', () => {
+  const rows = [['name', 'note'], ['Smith, J', 'say "hi"'], ['a\nb', '']];
+  assert.equal(C.toDelimited(rows, ','), 'name,note\n"Smith, J","say ""hi"""\n"a\nb",\n');
+  assert.equal(C.toDelimited([['a,b', 'c']], '\t'), 'a,b\tc\n');
+  assert.deepEqual(C.parseDelimited(C.toDelimited(rows, ','), ','), rows);
+});
+
+test('rowKey: stable, depends on every cell and their boundaries; tableView keep narrows before sorting', () => {
+  assert.equal(C.rowKey(['a', 'b']), C.rowKey(['a', 'b']));
+  assert.notEqual(C.rowKey(['a', 'b']), C.rowKey(['ab', '']));
+  assert.notEqual(C.rowKey(['a', 'b']), C.rowKey(['b', 'a']));
+  const rows = [['c'], ['a'], ['b']];
+  assert.deepEqual(C.tableView(rows, { keep: (i) => i !== 1, sortCol: 0 }), [2, 0]);
+  assert.deepEqual(C.tableView(rows, { keep: (i) => i !== 1, query: 'c' }), [0]);
+});
+
 test('signature: changes when a file is added, renamed or removed, not when one is only edited', async () => {
   const sig = async (...entries) => C.signature(C.flatten(await C.buildTree(dir('r', entries), ['r'])));
   const base = await sig(file('a.md'), dir('d', [file('b.md')]));

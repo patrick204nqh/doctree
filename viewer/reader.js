@@ -3,10 +3,10 @@
  * Opens a file and shows it: navigation (links, history, deep links), Markdown and text
  * rendering, relative images, and reload when the file changes on disk.
  */
-import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn } from './state.js';
+import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn, pref } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG, isHexColor,
-  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, tableView, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
+  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, tableView, toDelimited, rowKey, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
 } from './core.js';
 import { flash } from './dom.js';
 import { buildToc } from './outline.js';
@@ -23,6 +23,8 @@ const TABLE_CAP = 5 * FORMAT_CAP; // CSV and TSV are shown as a table up to this
 const RELOAD_CHECK_MS = 2000;
 let blobUrls = []; // object URLs to revoke on next file load
 let rawPath = null; // path of the file the reader switched to its raw text
+let tableCopy = null; // the open CSV/TSV table's rows as shown (filtered, sorted), for Copy; null for any other file
+const tableStates = new Map(); // file path → its table's filter, sort and column, kept across reloads
 let removed = false; // the open file is gone from disk; its last copy stays on screen
 
 /* ── Navigation: links, history, deep links ─────────────────────────────── */
@@ -143,8 +145,9 @@ function setRaw(raw) {
 previewBtn.addEventListener('click', () => setRaw(false));
 rawBtn.addEventListener('click', () => setRaw(true));
 
-/** The open file on the clipboard: a picture as an image (PNG, the one bitmap type Chrome accepts), anything else as its text on disk. */
+/** The open file on the clipboard: a picture as an image (PNG, the one bitmap type Chrome accepts), a table as the rows shown, anything else as its text on disk. */
 export async function copyCurrent() {
+  if (tableCopy) return navigator.clipboard.writeText(tableCopy());
   const file = await state.currentHandle.getFile();
   const ext = fileInfo(file.name).ext;
   if (!IMAGE_EXTS.has(ext) || ext === 'svg') return navigator.clipboard.writeText(await file.text());
@@ -174,6 +177,7 @@ async function renderFile(file, info, pathArr) {
   const media = Object.hasOwn(MEDIA_TAGS, info.ext);
   copyContentBtn.disabled = media;
   copyContentBtn.title = image && info.ext !== 'svg' ? 'Copy the image' : "Copy the file's text";
+  tableCopy = null;
   if (media) {
     renderMedia(file, info);
     buildToc();
@@ -194,7 +198,7 @@ async function renderFile(file, info, pathArr) {
     const text = await file.text();
     if (info.ext === 'html') await renderHtml(text, pathArr);
     else if (info.ext === 'mmd' || info.ext === 'mermaid') await renderDiagram(text);
-    else if (info.ext === 'csv' || info.ext === 'tsv') renderTable(text, info.ext === 'csv' ? ',' : '\t');
+    else if (info.ext === 'csv' || info.ext === 'tsv') renderTable(text, info.ext === 'csv' ? ',' : '\t', pathArr.join('/'));
     else renderJson(text, info.ext === 'jsonl');
   } else {
     await renderText(file, info.lang);
@@ -547,56 +551,218 @@ async function renderDiagram(text) {
   await runMermaid();
 }
 
-/** CSV or TSV as a table; the first row is the header. A bar above it filters rows and sorts by a column. */
-function renderTable(text, delim) {
+const URL_CELL = /^https?:\/\/\S+$/i;
+const FLAGS = ['red', 'orange', 'green', 'blue', 'purple']; // colours a table row can be flagged with
+const cap = (word) => word[0].toUpperCase() + word.slice(1);
+
+/** Table rows per page (Settings → Rows per page); "all" is a page too big to fill. */
+const rowsPerPage = () => {
+  const v = pref.get('rows') ?? '500';
+  return v === 'all' ? Number.MAX_SAFE_INTEGER : Number(v) || 500; // not Infinity: page × Infinity is NaN
+};
+
+/** Focus the table's filter box ("/"); false when the open file has none. */
+export function focusTableFilter() {
+  const box = bodyEl.querySelector('.table-bar input');
+  box?.focus();
+  box?.select();
+  return Boolean(box);
+}
+
+/**
+ * CSV or TSV as a table; the first row is the header. A bar above it filters rows; headers sort. A checkbox
+ * column selects rows to copy or flag with a colour, and the Flags menu shows only flagged or unflagged rows.
+ * Flags are saved in the browser per folder and file (never in the folder), keyed by the row's content.
+ * Filter, sort, page and selection are kept per file (`key`) when it reloads. Copy takes the matching rows.
+ */
+function renderTable(text, delim, key) {
   const [head = [], ...rows] = parseDelimited(text, delim);
   const label = (i) => head[i] || `Column ${i + 1}`;
   const make = (tag, props, ...kids) => { const el = Object.assign(document.createElement(tag), props); el.append(...kids); return el; };
   const columns = (first) => [new Option(first, -1), ...head.map((_, i) => new Option(label(i), i))];
+  const cellEl = (cell) => {
+    const td = make('td', cell.length > 60 ? { title: cell } : {}); // a long cell may be cut short, so its full text is the tooltip
+    if (URL_CELL.test(cell)) td.append(make('a', { href: cell, textContent: cell, target: '_blank', rel: 'noopener noreferrer' }));
+    else td.textContent = cell;
+    return td;
+  };
 
-  const trs = rows.map((r) => make('tr', {}, ...r.map((cell) => make('td', { textContent: cell }))));
-  const ths = head.map((_, i) => make('th', {}, make('button', { type: 'button', className: 'sort-head', textContent: label(i), title: 'Sort by this column' })));
+  const keys = rows.map(rowKey);
+  const flagStore = `flags:${state.currentFolder?.id ?? ''}:${key}`;
+  let flags = {}; // row key → colour
+  try { flags = JSON.parse(pref.get(flagStore) || '{}'); } catch { /* a damaged entry starts fresh */ }
+  const saveFlags = () => (Object.keys(flags).length ? pref.set(flagStore, JSON.stringify(flags)) : pref.remove(flagStore));
+
+  const saved = tableStates.get(key);
+  const keep = saved && saved.col < head.length && saved.sortCol < head.length;
+  const s = keep ? saved : { query: '', col: -1, sortCol: -1, desc: false, page: 0, flag: 'all', selected: new Set() };
+  const size = rowsPerPage();
+  if (s.size !== size) s.page = 0; // a new page size starts from the first page
+  s.size = size;
+  tableStates.set(key, s);
+
+  // Cells are built on demand, one page at a time: the DOM stays small however long the file is.
+  const trs = new Array(rows.length);
+  const trAt = (i) => {
+    if (trs[i]) return trs[i];
+    const pick = make('td', { className: 'sel-cell' },
+      make('input', { type: 'checkbox', className: 'row-pick', ariaLabel: `Select row ${i + 1}` }),
+      make('span', { className: 'flag-mark', textContent: '⚑', role: 'img' }));
+    const tr = make('tr', {}, pick, ...rows[i].map(cellEl));
+    tr.dataset.i = i;
+    return (trs[i] = tr);
+  };
+  const paint = (i) => {
+    const tr = trs[i], color = flags[keys[i]], on = s.selected.has(keys[i]);
+    if (color) tr.dataset.flag = color; else delete tr.dataset.flag;
+    tr.classList.toggle('picked', on);
+    const [box, mark] = tr.firstChild.children;
+    box.checked = on;
+    mark.classList.toggle('on', Boolean(color));
+    mark.ariaLabel = color ? `Flagged ${color}` : null;
+  };
+
+  const ths = head.map((_, i) => make('th', {}, make('button', { type: 'button', className: 'sort-head' },
+    make('span', { className: 'sort-label', textContent: label(i) }), make('span', { className: 'sort-icon', ariaHidden: 'true' }))));
+  const pickAll = make('input', { type: 'checkbox', ariaLabel: 'Select every matching row', title: 'Select every matching row' });
   const tbody = make('tbody');
   const table = make('table', {});
-  table.createTHead().append(make('tr', {}, ...ths));
+  table.createTHead().append(make('tr', {}, make('th', { className: 'sel-cell' }, pickAll), ...ths));
   table.append(tbody);
 
-  const query = make('input', { type: 'search', placeholder: 'Filter rows', autocomplete: 'off', ariaLabel: 'Filter rows' });
+  const query = make('input', { type: 'search', placeholder: 'Filter rows ( / )', autocomplete: 'off', ariaLabel: 'Filter rows', value: s.query });
   const colSel = make('select', { ariaLabel: 'Filter column', title: 'Filter column' }, ...columns('All columns'));
-  const sortSel = make('select', { ariaLabel: 'Sort by', title: 'Sort by' }, ...columns('Original order'));
-  const dirBtn = make('button', { type: 'button', className: 'btn', title: 'Reverse the sort order', ariaLabel: 'Sort direction' });
+  const flagSel = make('select', { ariaLabel: 'Show flagged rows', title: 'Show flagged rows' },
+    new Option('All rows', 'all'), new Option('Flagged', 'flagged'), new Option('Unflagged', 'unflagged'), ...FLAGS.map((c) => new Option(cap(c), c)));
+  const wrapBtn = make('button', { type: 'button', className: 'btn', textContent: 'Wrap', title: 'Wrap long cells instead of cutting them to one line' });
   const count = make('span', { className: 'table-count' });
-  const bar = make('div', { className: 'table-bar' }, query, colSel, sortSel, dirBtn, count);
+  const picked = make('span', { className: 'bulk-count' });
+  const copyPick = make('button', { type: 'button', className: 'btn', textContent: 'Copy', title: 'Copy the selected rows' });
+  const swatches = make('span', { className: 'flag-swatches', role: 'group', ariaLabel: 'Flag the selected rows' },
+    ...FLAGS.map((c) => { const b = make('button', { type: 'button', className: 'flag-swatch', ariaLabel: `Flag ${c}`, title: `Flag ${c}` }); b.dataset.color = c; return b; }),
+    make('button', { type: 'button', className: 'flag-swatch none', textContent: '×', ariaLabel: 'Remove flag', title: 'Remove flag' }));
+  const clearPick = make('button', { type: 'button', className: 'btn', textContent: 'Clear', title: 'Clear the selection' });
+  const bulk = make('span', { className: 'table-bulk', hidden: true }, picked, copyPick, swatches, clearPick);
+  const prevBtn = make('button', { type: 'button', className: 'btn', textContent: '‹', ariaLabel: 'Previous page', title: 'Previous page' });
+  const nextBtn = make('button', { type: 'button', className: 'btn', textContent: '›', ariaLabel: 'Next page', title: 'Next page' });
+  const pager = make('span', { className: 'table-pager' }, prevBtn, nextBtn);
+  const bar = make('div', { className: 'table-bar' }, query, colSel, flagSel, wrapBtn, count, bulk, pager);
+  const wrap = make('div', { className: 'table-wrap' }, table);
 
-  const s = { query: '', col: -1, sortCol: -1, desc: false };
+  const flagTest = () => (s.flag === 'all' ? null : (i) => {
+    const color = flags[keys[i]];
+    return s.flag === 'flagged' ? Boolean(color) : s.flag === 'unflagged' ? !color : color === s.flag;
+  });
+  const matching = () => tableView(rows, { ...s, keep: flagTest() });
+  let shown = [];   // every matching row, in display order
+  let onPage = [];  // the rows on the current page
+  let last = -1;    // position in `shown` of the last row ticked, for shift-click ranges
+
+  const refresh = () => {
+    const counts = {};
+    let flagged = 0, picks = 0;
+    keys.forEach((k) => {
+      const color = flags[k];
+      if (color) { counts[color] = (counts[color] || 0) + 1; flagged++; }
+      if (s.selected.has(k)) picks++;
+    });
+    const o = flagSel.options;
+    o[1].text = `Flagged (${flagged.toLocaleString()})`;
+    o[2].text = `Unflagged (${(rows.length - flagged).toLocaleString()})`;
+    FLAGS.forEach((c, j) => { o[3 + j].text = `${cap(c)} (${(counts[c] || 0).toLocaleString()})`; });
+    flagSel.value = s.flag;
+    picked.textContent = `${picks.toLocaleString()} selected`;
+    bulk.hidden = picks === 0;
+    count.hidden = picks > 0;
+    const ticked = shown.filter((i) => s.selected.has(keys[i])).length;
+    pickAll.checked = ticked > 0 && ticked === shown.length;
+    pickAll.indeterminate = ticked > 0 && ticked < shown.length;
+  };
   const update = () => {
-    const show = tableView(rows, s);
+    shown = matching();
+    last = -1;
+    const pages = Math.max(1, Math.ceil(shown.length / size));
+    s.page = Math.min(s.page, pages - 1);
+    const from = s.page * size;
+    const to = Math.min(shown.length, from + size);
+    onPage = shown.slice(from, to);
     const frag = document.createDocumentFragment();
-    for (const i of show) frag.append(trs[i]);
+    for (const i of onPage) { frag.append(trAt(i)); paint(i); }
     tbody.replaceChildren(frag);
-    count.textContent = show.length === rows.length
-      ? `${rows.length.toLocaleString()} row${rows.length === 1 ? '' : 's'}`
-      : `${show.length.toLocaleString()} of ${rows.length.toLocaleString()} rows`;
-    sortSel.value = String(s.sortCol);
-    dirBtn.textContent = s.desc ? '↓ Desc' : '↑ Asc';
-    dirBtn.disabled = s.sortCol < 0;
-    ths.forEach((th, i) => th.setAttribute('aria-sort', i !== s.sortCol ? 'none' : s.desc ? 'descending' : 'ascending'));
+    const filtered = shown.length !== rows.length;
+    count.textContent = (pages > 1 ? `${(from + 1).toLocaleString()}–${to.toLocaleString()} of ` : '')
+      + (filtered ? `${shown.length.toLocaleString()} matching · ${rows.length.toLocaleString()} rows`
+        : `${rows.length.toLocaleString()} row${rows.length === 1 ? '' : 's'}`);
+    pager.hidden = pages === 1;
+    prevBtn.disabled = s.page === 0;
+    nextBtn.disabled = s.page === pages - 1;
+    colSel.value = String(s.col);
+    ths.forEach((th, i) => {
+      const on = i === s.sortCol;
+      th.setAttribute('aria-sort', !on ? 'none' : s.desc ? 'descending' : 'ascending');
+      th.firstChild.title = !on ? 'Sort ascending' : !s.desc ? 'Sort descending' : 'Back to file order';
+    });
+    refresh();
+  };
+  const setWrap = (on) => {
+    wrap.classList.toggle('compact', !on);
+    wrapBtn.setAttribute('aria-pressed', String(on));
+  };
+  const change = (patch) => { Object.assign(s, patch, { page: 0 }); update(); }; // a new filter or sort starts from the first page
+  const turn = (by) => { s.page += by; update(); wrap.scrollTop = 0; };
+  const tick = (positions, on) => {
+    for (const p of positions) s.selected[on ? 'add' : 'delete'](keys[shown[p]]);
+    onPage.forEach(paint); // no rebuild: the checkbox keeps focus
+    refresh();
   };
 
   let timer;
-  query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { s.query = query.value; update(); }, 120); });
-  query.addEventListener('keydown', (e) => { if (e.key === 'Escape' && query.value) { query.value = s.query = ''; update(); } });
-  colSel.addEventListener('change', () => { s.col = Number(colSel.value); update(); });
-  sortSel.addEventListener('change', () => { s.sortCol = Number(sortSel.value); s.desc = false; update(); });
-  dirBtn.addEventListener('click', () => { s.desc = !s.desc; update(); });
+  query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => change({ query: query.value }), 120); });
+  query.addEventListener('keydown', (e) => { if (e.key === 'Escape' && query.value) { query.value = ''; change({ query: '' }); } });
+  colSel.addEventListener('change', () => change({ col: Number(colSel.value) }));
+  flagSel.addEventListener('change', () => change({ flag: flagSel.value }));
+  wrapBtn.addEventListener('click', () => { const on = !pref.on('table-wrap', false); pref.setOn('table-wrap', on); setWrap(on); });
+  prevBtn.addEventListener('click', () => turn(-1));
+  nextBtn.addEventListener('click', () => turn(1));
   // a header click: ascending, then descending, then back to file order
   ths.forEach((th, i) => th.addEventListener('click', () => {
-    if (s.sortCol !== i) { s.sortCol = i; s.desc = false; } else if (!s.desc) s.desc = true; else { s.sortCol = -1; s.desc = false; }
-    update();
+    if (s.sortCol !== i) change({ sortCol: i, desc: false });
+    else if (!s.desc) change({ desc: true });
+    else change({ sortCol: -1, desc: false });
   }));
 
+  tbody.addEventListener('click', (e) => {
+    const box = e.target.closest('.row-pick');
+    if (!box) return;
+    const pos = shown.indexOf(Number(box.closest('tr').dataset.i));
+    const [lo, hi] = e.shiftKey && last >= 0 ? [Math.min(last, pos), Math.max(last, pos)] : [pos, pos];
+    last = pos;
+    tick(Array.from({ length: hi - lo + 1 }, (_, n) => lo + n), box.checked);
+  });
+  pickAll.addEventListener('change', () => tick(shown.keys(), pickAll.checked));
+  clearPick.addEventListener('click', () => { s.selected.clear(); onPage.forEach(paint); refresh(); });
+  swatches.addEventListener('click', (e) => {
+    const swatch = e.target.closest('.flag-swatch');
+    if (!swatch) return;
+    for (const k of s.selected) { if (swatch.dataset.color) flags[k] = swatch.dataset.color; else delete flags[k]; }
+    saveFlags();
+    update(); // a flag filter may now show different rows
+  });
+  copyPick.addEventListener('click', async () => {
+    const chosen = tableView(rows, { sortCol: s.sortCol, desc: s.desc, keep: (i) => s.selected.has(keys[i]) });
+    try {
+      await navigator.clipboard.writeText(toDelimited([head, ...chosen.map((i) => rows[i])], delim));
+      flash(copyPick);
+    } catch (err) {
+      console.warn('[Doctree] copy failed:', err);
+    }
+  });
+
   update();
-  bodyEl.replaceChildren(bar, make('div', { className: 'table-wrap' }, table));
+  setWrap(pref.on('table-wrap', false));
+  tableCopy = () => toDelimited([head, ...matching().map((i) => rows[i])], delim);
+  copyContentBtn.title = 'Copy the matching rows, every page';
+  bodyEl.replaceChildren(bar, wrap);
 }
 
 /**

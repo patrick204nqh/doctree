@@ -7,7 +7,8 @@ Doctree collects no data. It has no server, no analytics and no account, and it 
 | Data | Where | Why |
 |---|---|---|
 | Handles of the last 8 folders you opened | IndexedDB (`doctree`) | Reopen a folder |
-| Theme, width, breadcrumb, outline and tree settings, and the last 8 file paths opened in each folder | `localStorage` of the viewer page | Remember your choices and show recent files |
+| Theme, width, breadcrumb, outline, tree and table settings, and the last 8 file paths opened in each folder | `localStorage` of the viewer page | Remember your choices and show recent files |
+| The colour flags you put on CSV and TSV rows: a colour and a short hash of the row's text, per folder and file | `localStorage` of the viewer page | Show your flags again when you reopen the file. Nothing is written to your folder |
 | Text of a Markdown file opened directly from a `file://` URL | `chrome.storage.local` | Pass it to the viewer. Removed when the viewer closes |
 
 Clearing the extension's data in Chrome removes all of it. File contents are read in the browser to show them and are not copied elsewhere.

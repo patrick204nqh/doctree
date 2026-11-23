@@ -4,7 +4,13 @@
 
 - Mermaid: `.mmd` and `.mermaid` files are listed in the tree and render as a diagram, with **Raw** for the source.
 - CSV and TSV: files up to 5 MB show as a table (was 1 MB); larger files still show as text.
-- CSV and TSV: a bar above the table filters rows by text (all columns or one) with a row count, and sorts by any column from a menu or by clicking its header. Numbers sort by value, text in natural order, empty cells last.
+- CSV and TSV: a bar above the table filters rows by text (all columns or one) with a row count. Each header sorts its column: click for ascending, again for descending, again for file order, with an arrow showing the state. Numbers sort by value, text in natural order, empty cells last.
+- CSV and TSV: Copy copies the matching rows (filter and sort applied, every page) as CSV or TSV, not the whole file.
+- CSV and TSV: `http(s)` cells are links, long cells are cut to one line with the full text on hover (a **Wrap** button shows them whole), and `/` focuses the filter box.
+- CSV and TSV: the filter, column and sort are kept when the file reloads after a change on disk.
+- CSV and TSV: rows come in pages (100, 500, 1,000 or all; default 500, set in Settings → Rows per page) with ‹ › buttons and a range in the row count, so a large file opens and re-sorts quickly. Only the visible page is built in the DOM.
+- Settings: the Trusted sites hint is now a line of its own under the label, and says what the list does.
+- CSV and TSV: a checkbox column selects rows (shift-click for a range, the header box for every matching row). The selection bar copies them or flags them with one of five colours, and a **Flags** menu in the filter bar shows all, flagged, unflagged or one colour, so you can flag rows, clear the filter and compare. Flags are saved in the browser per folder and file, never written to the folder, and follow the row's content.
 
 ## 1.4.0 — 2026-11-18
 

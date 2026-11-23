@@ -105,9 +105,10 @@ function compareCells(a, b) {
  * Which of `rows` to show, as indices in display order. `query` keeps rows whose cell `col` (or any
  * cell when col is -1) contains it, ignoring case; `sortCol` (-1 for file order) sorts them, empty cells last.
  */
-export function tableView(rows, { query = '', col = -1, sortCol = -1, desc = false } = {}) {
+export function tableView(rows, { query = '', col = -1, sortCol = -1, desc = false, keep = null } = {}) {
   const q = query.trim().toLowerCase();
   let idx = rows.map((_, i) => i);
+  if (keep) idx = idx.filter(keep); // keep(i): a test on the row's index, applied before the text filter
   // ponytail: rescans and lowercases every row per call; cache lowercased rows if 50k+ row files feel slow
   if (q) idx = idx.filter((i) => (col >= 0 ? rows[i][col] ?? '' : rows[i].join('\t')).toLowerCase().includes(q));
   if (sortCol >= 0) {
@@ -118,6 +119,26 @@ export function tableView(rows, { query = '', col = -1, sortCol = -1, desc = fal
     });
   }
   return idx;
+}
+
+/** Rows back to CSV or TSV text: a cell with the delimiter, a quote or a line break gets quoted. */
+export function toDelimited(rows, delim) {
+  const cell = (c) => (c.includes(delim) || /["\r\n]/.test(c) ? `"${c.replaceAll('"', '""')}"` : c);
+  return rows.map((r) => r.map(cell).join(delim)).join('\n') + '\n';
+}
+
+/** A short stable id for a row from its cells (cyrb53 hash): flags follow the row's content, not its position. */
+export function rowKey(cells) {
+  const s = cells.join('\u0001');
+  let a = 0xdeadbeef, b = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    a = Math.imul(a ^ c, 2654435761);
+    b = Math.imul(b ^ c, 1597334677);
+  }
+  a = Math.imul(a ^ (a >>> 16), 2246822507) ^ Math.imul(b ^ (b >>> 13), 3266489909);
+  b = Math.imul(b ^ (b >>> 16), 2246822507) ^ Math.imul(a ^ (a >>> 13), 3266489909);
+  return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36);
 }
 
 const FM_SKIP = new Set(['schema', 'key']);                // front matter keys not worth a chip

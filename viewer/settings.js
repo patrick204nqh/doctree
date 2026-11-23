@@ -6,7 +6,7 @@ import { mainEl, treeToggleBtn, modeSwitch, state, pref } from './state.js';
 import { setupMenu, typing } from './dom.js';
 import { setToc, tocOn } from './outline.js';
 import { renderCrumbs } from './crumbs.js';
-import { reloadCurrent } from './reader.js';
+import { reloadCurrent, focusTableFilter } from './reader.js';
 import { openPalette } from './palette.js';
 import { getSites, setSites } from './links.js';
 
@@ -25,6 +25,7 @@ const PREFS = {
   crumbs:  { get: () => (pref.on('crumbs', true) ? 'on' : 'off'), set: (v) => setCrumbs(v === 'on') },
   outline: { get: () => (tocOn() ? 'on' : 'off'), set: (v) => setToc(v === 'on') },
   tree:    { get: () => mainEl.dataset.tree, set: (v) => setTreeShown(v === 'on', true) },
+  rows:    { get: () => pref.get('rows') ?? '500', set: setRows },
 };
 
 setupMenu(settingsMenu, settingsBtn, showSettings, settingsBtn);
@@ -48,6 +49,11 @@ function showSettings() {
     b.setAttribute('aria-pressed', String(PREFS[b.dataset.pref].get() === b.dataset.value));
   });
   if (document.activeElement !== sitesEl) sitesEl.value = getSites().join('\n');
+}
+
+function setRows(rows) {
+  pref.set('rows', rows);
+  if (state.currentHandle) reloadCurrent(); // redraws an open table with the new page size
 }
 
 function setTheme(theme) {
@@ -89,6 +95,7 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || typing()) return;
   switch (e.key) {
     case '\\': if (state.rootHandle) toggleTree(); break;
+    case '/': if (focusTableFilter()) e.preventDefault(); break;
     case 'o': apply('outline', tocOn() ? 'off' : 'on'); break;
     case 'w': apply('width', PREFS.width.get() === 'full' ? 'contained' : 'full'); break;
     case 'r': if (!modeSwitch.hidden) modeSwitch.querySelector('[aria-pressed="false"]').click(); break;
