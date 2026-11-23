@@ -6,7 +6,8 @@ import { mainEl, treeToggleBtn, modeSwitch, state, pref } from './state.js';
 import { setupMenu, typing } from './dom.js';
 import { setToc, tocOn } from './outline.js';
 import { renderCrumbs } from './crumbs.js';
-import { reloadCurrent, focusTableFilter } from './reader.js';
+import { reloadCurrent } from './reader.js';
+import { focusTableFilter } from './table.js';
 import { openPalette } from './palette.js';
 import { getSites, setSites } from './links.js';
 

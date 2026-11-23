@@ -980,8 +980,9 @@ details:has(.tree-file.active) > .tree-dir .ico {
   gap: 8px;
   margin-bottom: 8px;
 }
-#markdown-body .table-bar input,
-#markdown-body .table-bar select {
+#markdown-body .table-bar input {
+  flex: 1 1 14rem;
+  min-width: 10rem;
   padding: 4px 8px;
   font-size: 0.8rem;
   color: var(--fg);
@@ -989,12 +990,48 @@ details:has(.tree-file.active) > .tree-dir .ico {
   border: 1px solid var(--border);
   border-radius: 6px;
 }
-#markdown-body .table-bar input { flex: 1 1 14rem; min-width: 10rem; }
-#markdown-body .table-bar input:focus,
-#markdown-body .table-bar select:focus { outline: none; border-color: var(--link); }
+#markdown-body .table-bar input:focus { outline: none; border-color: var(--link); }
 #markdown-body .table-bar .btn { margin-top: 0; }
 #markdown-body .table-bar .btn:disabled { opacity: 0.5; cursor: default; }
-#markdown-body .table-bar .btn[aria-pressed="true"] { border-color: var(--link); color: var(--link); }
+#markdown-body .table-bar .btn[aria-pressed="true"],
+#markdown-body .table-bar .btn.active { border-color: var(--link); color: var(--link); }
+#markdown-body .menu-btn::after {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin: 0 1px 2px 8px;
+  border: solid currentColor;
+  border-width: 0 1.3px 1.3px 0;
+  transform: rotate(45deg);
+}
+#markdown-body .table-menu { min-width: 220px; max-height: 60vh; overflow: auto; }
+#markdown-body .table-menu hr { height: 0; margin: 4px 0; border: 0; border-top: 1px solid var(--border); }
+#markdown-body .table-menu [role^="menuitem"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+#markdown-body .table-menu [role="menuitem"] { padding-left: calc(10px + 1em + 8px); } /* lines up with the names beside a tick */
+#markdown-body .table-menu [role^="menuitem"]:hover:not(:disabled) { background: var(--sidebar-hover-bg); }
+#markdown-body .table-menu [role^="menuitem"]:disabled { color: var(--muted); cursor: default; }
+#markdown-body .table-menu .m-check { width: 1em; flex: none; text-align: center; color: var(--link); }
+#markdown-body .table-menu [aria-checked="true"] .m-check::before { content: '✓'; }
+#markdown-body .table-menu .m-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#markdown-body .table-menu .m-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+#markdown-body .flag-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--flag); }
+#markdown-body .flag-dot[data-color=""] { display: none; }
 #markdown-body .table-count { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
 #markdown-body .table-pager { display: inline-flex; gap: 4px; }
 #markdown-body .table-pager[hidden] { display: none; }
@@ -1023,11 +1060,11 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #markdown-body .flag-swatch:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; border-radius: 4px; }
 #markdown-body .flag-swatch.none { color: var(--muted); font-size: 14px; }
 #markdown-body .flag-swatch.none::before { display: none; }
-#markdown-body .flag-swatch[data-color="red"], #markdown-body tr[data-flag="red"] { --flag: var(--flag-red); }
-#markdown-body .flag-swatch[data-color="orange"], #markdown-body tr[data-flag="orange"] { --flag: var(--flag-orange); }
-#markdown-body .flag-swatch[data-color="green"], #markdown-body tr[data-flag="green"] { --flag: var(--flag-green); }
-#markdown-body .flag-swatch[data-color="blue"], #markdown-body tr[data-flag="blue"] { --flag: var(--flag-blue); }
-#markdown-body .flag-swatch[data-color="purple"], #markdown-body tr[data-flag="purple"] { --flag: var(--flag-purple); }
+#markdown-body :is(.flag-swatch, .flag-dot)[data-color="red"], #markdown-body tr[data-flag="red"] { --flag: var(--flag-red); }
+#markdown-body :is(.flag-swatch, .flag-dot)[data-color="orange"], #markdown-body tr[data-flag="orange"] { --flag: var(--flag-orange); }
+#markdown-body :is(.flag-swatch, .flag-dot)[data-color="green"], #markdown-body tr[data-flag="green"] { --flag: var(--flag-green); }
+#markdown-body :is(.flag-swatch, .flag-dot)[data-color="blue"], #markdown-body tr[data-flag="blue"] { --flag: var(--flag-blue); }
+#markdown-body :is(.flag-swatch, .flag-dot)[data-color="purple"], #markdown-body tr[data-flag="purple"] { --flag: var(--flag-purple); }
 #markdown-body .table-wrap .sel-cell { width: 3.6rem; white-space: nowrap; cursor: default; }
 #markdown-body .sel-cell input { width: 1rem; height: 1rem; margin: 0; vertical-align: middle; accent-color: var(--link); cursor: pointer; }
 #markdown-body .flag-mark { margin-left: 6px; font-size: 1.1rem; line-height: 1; vertical-align: middle; color: var(--flag); visibility: hidden; }

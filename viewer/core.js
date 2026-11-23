@@ -102,15 +102,16 @@ function compareCells(a, b) {
 }
 
 /**
- * Which of `rows` to show, as indices in display order. `query` keeps rows whose cell `col` (or any
- * cell when col is -1) contains it, ignoring case; `sortCol` (-1 for file order) sorts them, empty cells last.
+ * Which of `rows` to show, as indices in display order. `query` keeps rows whose cells in `cols` (every cell
+ * when null) contain it, ignoring case; `keep(i)` tests a row first; `sortCol` (-1 for file order) sorts them,
+ * empty cells last.
  */
-export function tableView(rows, { query = '', col = -1, sortCol = -1, desc = false, keep = null } = {}) {
+export function tableView(rows, { query = '', cols = null, sortCol = -1, desc = false, keep = null } = {}) {
   const q = query.trim().toLowerCase();
   let idx = rows.map((_, i) => i);
-  if (keep) idx = idx.filter(keep); // keep(i): a test on the row's index, applied before the text filter
+  if (keep) idx = idx.filter(keep);
   // ponytail: rescans and lowercases every row per call; cache lowercased rows if 50k+ row files feel slow
-  if (q) idx = idx.filter((i) => (col >= 0 ? rows[i][col] ?? '' : rows[i].join('\t')).toLowerCase().includes(q));
+  if (q) idx = idx.filter((i) => (cols ? cols.map((c) => rows[i][c] ?? '').join('\t') : rows[i].join('\t')).toLowerCase().includes(q));
   if (sortCol >= 0) {
     const sign = desc ? -1 : 1;
     idx.sort((a, b) => {

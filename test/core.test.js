@@ -245,7 +245,7 @@ test('tableView: filter by column or anywhere, sort numbers by value, text natur
   assert.deepEqual(names({ sortCol: 1, desc: true }), ['b', 'a', 'a2', 'a10', 'c']);
   assert.deepEqual(names({ sortCol: 0 }), ['a', 'a2', 'a10', 'b', 'c']);
   assert.deepEqual(names({ query: 'A' }), ['a', 'a10', 'a2']);
-  assert.deepEqual(names({ query: '10', col: 0 }), ['a10']);
+  assert.deepEqual(names({ query: '10', cols: [0] }), ['a10']);
   assert.deepEqual(names({ query: '10' }), ['b', 'a10']);
   assert.deepEqual(names({ query: 'a', sortCol: 1, desc: true }), ['a', 'a2', 'a10']);
 });
