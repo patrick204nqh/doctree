@@ -963,12 +963,41 @@ details:has(.tree-file.active) > .tree-dir .ico {
 #markdown-body .hljs-quote { color: var(--muted); font-style: italic; }
 
 /* ── CSV and TSV table ────────────────────────────────────────────────────── */
-#markdown-body .table-wrap {
-  overflow: auto;
-  max-height: calc(100vh - 140px);
+#markdown-body .table-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+#markdown-body .table-bar input,
+#markdown-body .table-bar select {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  color: var(--fg);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
 }
+#markdown-body .table-bar input { flex: 1 1 14rem; min-width: 10rem; }
+#markdown-body .table-bar input:focus,
+#markdown-body .table-bar select:focus { outline: none; border-color: var(--link); }
+#markdown-body .table-bar .btn { margin-top: 0; }
+#markdown-body .table-bar .btn:disabled { opacity: 0.5; cursor: default; }
+#markdown-body .table-count { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
+#markdown-body .table-wrap {
+  overflow: auto;
+  max-height: calc(100vh - 190px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+#markdown-body .sort-head {
+  all: unset;
+  cursor: pointer;
+}
+#markdown-body .sort-head:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+#markdown-body th[aria-sort="ascending"] .sort-head::after { content: ' ↑'; }
+#markdown-body th[aria-sort="descending"] .sort-head::after { content: ' ↓'; }
 #markdown-body .table-wrap table {
   width: auto;
   min-width: 100%;

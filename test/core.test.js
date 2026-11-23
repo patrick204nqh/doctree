@@ -237,6 +237,19 @@ test('parseDelimited: quotes, escaped quotes, line breaks in cells, CRLF, BOM, b
   assert.deepEqual(C.parseDelimited('', ','), []);
 });
 
+test('tableView: filter by column or anywhere, sort numbers by value, text naturally, empty cells last', () => {
+  const rows = [['b', '10'], ['a', '9'], ['c', ''], ['a10', '-2'], ['a2', '1.5']];
+  const names = (opts) => C.tableView(rows, opts).map((i) => rows[i][0]);
+  assert.deepEqual(names({}), ['b', 'a', 'c', 'a10', 'a2']);
+  assert.deepEqual(names({ sortCol: 1 }), ['a10', 'a2', 'a', 'b', 'c']);
+  assert.deepEqual(names({ sortCol: 1, desc: true }), ['b', 'a', 'a2', 'a10', 'c']);
+  assert.deepEqual(names({ sortCol: 0 }), ['a', 'a2', 'a10', 'b', 'c']);
+  assert.deepEqual(names({ query: 'A' }), ['a', 'a10', 'a2']);
+  assert.deepEqual(names({ query: '10', col: 0 }), ['a10']);
+  assert.deepEqual(names({ query: '10' }), ['b', 'a10']);
+  assert.deepEqual(names({ query: 'a', sortCol: 1, desc: true }), ['a', 'a2', 'a10']);
+});
+
 test('signature: changes when a file is added, renamed or removed, not when one is only edited', async () => {
   const sig = async (...entries) => C.signature(C.flatten(await C.buildTree(dir('r', entries), ['r'])));
   const base = await sig(file('a.md'), dir('d', [file('b.md')]));

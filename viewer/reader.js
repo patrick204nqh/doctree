@@ -6,7 +6,7 @@
 import { state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, previewBtn, rawBtn, contentWrapper, copyGroup, copyContentBtn } from './state.js';
 import {
   isRelativeLink, resolveLink, resolvePathArray, splitFrontmatter, resolveUrl, escapeAttr, PURIFY_CONFIG, isHexColor,
-  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
+  hashToPath, pathToHash, fileInfo, formatSize, prettyJson, parseDelimited, tableView, stampOf, IMAGE_EXTS, MEDIA_TAGS, svgSize,
 } from './core.js';
 import { flash } from './dom.js';
 import { buildToc } from './outline.js';
@@ -547,21 +547,56 @@ async function renderDiagram(text) {
   await runMermaid();
 }
 
-/** CSV or TSV as a table; the first row is the header. */
+/** CSV or TSV as a table; the first row is the header. A bar above it filters rows and sorts by a column. */
 function renderTable(text, delim) {
   const [head = [], ...rows] = parseDelimited(text, delim);
-  const tr = (cells, tag) => {
-    const row = document.createElement('tr');
-    for (const cell of cells) row.append(Object.assign(document.createElement(tag), { textContent: cell }));
-    return row;
+  const label = (i) => head[i] || `Column ${i + 1}`;
+  const make = (tag, props, ...kids) => { const el = Object.assign(document.createElement(tag), props); el.append(...kids); return el; };
+  const columns = (first) => [new Option(first, -1), ...head.map((_, i) => new Option(label(i), i))];
+
+  const trs = rows.map((r) => make('tr', {}, ...r.map((cell) => make('td', { textContent: cell }))));
+  const ths = head.map((_, i) => make('th', {}, make('button', { type: 'button', className: 'sort-head', textContent: label(i), title: 'Sort by this column' })));
+  const tbody = make('tbody');
+  const table = make('table', {});
+  table.createTHead().append(make('tr', {}, ...ths));
+  table.append(tbody);
+
+  const query = make('input', { type: 'search', placeholder: 'Filter rows', autocomplete: 'off', ariaLabel: 'Filter rows' });
+  const colSel = make('select', { ariaLabel: 'Filter column', title: 'Filter column' }, ...columns('All columns'));
+  const sortSel = make('select', { ariaLabel: 'Sort by', title: 'Sort by' }, ...columns('Original order'));
+  const dirBtn = make('button', { type: 'button', className: 'btn', title: 'Reverse the sort order', ariaLabel: 'Sort direction' });
+  const count = make('span', { className: 'table-count' });
+  const bar = make('div', { className: 'table-bar' }, query, colSel, sortSel, dirBtn, count);
+
+  const s = { query: '', col: -1, sortCol: -1, desc: false };
+  const update = () => {
+    const show = tableView(rows, s);
+    const frag = document.createDocumentFragment();
+    for (const i of show) frag.append(trs[i]);
+    tbody.replaceChildren(frag);
+    count.textContent = show.length === rows.length
+      ? `${rows.length.toLocaleString()} row${rows.length === 1 ? '' : 's'}`
+      : `${show.length.toLocaleString()} of ${rows.length.toLocaleString()} rows`;
+    sortSel.value = String(s.sortCol);
+    dirBtn.textContent = s.desc ? '↓ Desc' : '↑ Asc';
+    dirBtn.disabled = s.sortCol < 0;
+    ths.forEach((th, i) => th.setAttribute('aria-sort', i !== s.sortCol ? 'none' : s.desc ? 'descending' : 'ascending'));
   };
-  const table = document.createElement('table');
-  table.createTHead().append(tr(head, 'th'));
-  table.createTBody().append(...rows.map((r) => tr(r, 'td')));
-  const wrap = document.createElement('div');
-  wrap.className = 'table-wrap';
-  wrap.append(table);
-  bodyEl.replaceChildren(wrap);
+
+  let timer;
+  query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => { s.query = query.value; update(); }, 120); });
+  query.addEventListener('keydown', (e) => { if (e.key === 'Escape' && query.value) { query.value = s.query = ''; update(); } });
+  colSel.addEventListener('change', () => { s.col = Number(colSel.value); update(); });
+  sortSel.addEventListener('change', () => { s.sortCol = Number(sortSel.value); s.desc = false; update(); });
+  dirBtn.addEventListener('click', () => { s.desc = !s.desc; update(); });
+  // a header click: ascending, then descending, then back to file order
+  ths.forEach((th, i) => th.addEventListener('click', () => {
+    if (s.sortCol !== i) { s.sortCol = i; s.desc = false; } else if (!s.desc) s.desc = true; else { s.sortCol = -1; s.desc = false; }
+    update();
+  }));
+
+  update();
+  bodyEl.replaceChildren(bar, make('div', { className: 'table-wrap' }, table));
 }
 
 /**

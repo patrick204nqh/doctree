@@ -90,6 +90,36 @@ export function parseDelimited(text, delim) {
   return rows.filter((r) => r.length > 1 || r[0] !== '');
 }
 
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+const asNumber = (s) => { const n = s.trim() === '' ? NaN : Number(s); return Number.isFinite(n) ? n : null; };
+
+/** Numbers before text, numbers by value, text in natural order ("a2" < "a10"). */
+function compareCells(a, b) {
+  const x = asNumber(a), y = asNumber(b);
+  if (x !== null && y !== null) return x - y;
+  if (x !== null || y !== null) return x !== null ? -1 : 1;
+  return collator.compare(a, b);
+}
+
+/**
+ * Which of `rows` to show, as indices in display order. `query` keeps rows whose cell `col` (or any
+ * cell when col is -1) contains it, ignoring case; `sortCol` (-1 for file order) sorts them, empty cells last.
+ */
+export function tableView(rows, { query = '', col = -1, sortCol = -1, desc = false } = {}) {
+  const q = query.trim().toLowerCase();
+  let idx = rows.map((_, i) => i);
+  // ponytail: rescans and lowercases every row per call; cache lowercased rows if 50k+ row files feel slow
+  if (q) idx = idx.filter((i) => (col >= 0 ? rows[i][col] ?? '' : rows[i].join('\t')).toLowerCase().includes(q));
+  if (sortCol >= 0) {
+    const sign = desc ? -1 : 1;
+    idx.sort((a, b) => {
+      const x = rows[a][sortCol] ?? '', y = rows[b][sortCol] ?? '';
+      return x === '' || y === '' ? (x === '') - (y === '') : sign * compareCells(x, y);
+    });
+  }
+  return idx;
+}
+
 const FM_SKIP = new Set(['schema', 'key']);                // front matter keys not worth a chip
 const INDEX_NAMES = ['index.md', 'readme.md', 'task.md'];  // a folder's entry file, first match wins
 const IGNORED_DIRS = new Set(['node_modules', '__pycache__']);

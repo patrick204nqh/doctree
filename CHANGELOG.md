@@ -4,6 +4,7 @@
 
 - Mermaid: `.mmd` and `.mermaid` files are listed in the tree and render as a diagram, with **Raw** for the source.
 - CSV and TSV: files up to 5 MB show as a table (was 1 MB); larger files still show as text.
+- CSV and TSV: a bar above the table filters rows by text (all columns or one) with a row count, and sorts by any column from a menu or by clicking its header. Numbers sort by value, text in natural order, empty cells last.
 
 ## 1.4.0 — 2026-11-18
 
