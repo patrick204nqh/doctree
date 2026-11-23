@@ -697,6 +697,13 @@ details:has(.tree-file.active) > .tree-dir .ico {
   margin-left: -1px;
   border-radius: 0 6px 6px 0;
 }
+.btn-group > .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn-group > .btn:disabled:hover {
+  background: var(--bg);
+}
 .caret {
   display: inline-flex;
   align-items: center;

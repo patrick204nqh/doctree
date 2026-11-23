@@ -6,6 +6,7 @@
  */
 import { bodyEl } from './state.js';
 import './settings.js';
+import './nav.js';
 import { refreshFolders, restoreRoot } from './folders.js';
 import { loadFromStorage, setTitle } from './reader.js';
 

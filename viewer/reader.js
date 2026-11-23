@@ -26,6 +26,7 @@ let blobUrls = []; // object URLs to revoke on next file load
 let rawPath = null; // path of the file the reader switched to its raw text
 let tableCopy = null; // the open CSV/TSV table's rows as shown (filtered, sorted), for Copy; null for any other file
 let removed = false; // the open file is gone from disk; its last copy stays on screen
+const leftAt = new Map(); // hash of a file → scroll position when the reader left it, so Back lands where they were
 
 /* ── Navigation: links, history, deep links ─────────────────────────────── */
 bodyEl.addEventListener('click', (e) => {
@@ -60,18 +61,20 @@ window.addEventListener('popstate', () => {
   if (path) openPath(path, null);
 });
 
-/** historyMode: 'push' adds a Back entry, 'replace' rewrites the current one, null leaves it. anchor: heading id to scroll to. */
+/** historyMode: 'push' adds a Back entry, 'replace' rewrites the current one, null leaves it (Back, Forward, a deep link). anchor: heading id to scroll to. */
 export async function openPath(pathArr, historyMode, anchor) {
+  if (state.currentPath.length) leftAt.set(pathToHash(state.currentPath), contentWrapper.scrollTop);
   try {
     await loadFileHandle(await navigateToHandle(state.rootHandle, pathArr), pathArr);
   } catch (err) {
     console.warn('[Doctree] cannot open:', pathArr.join('/'), err);
     return;
   }
+  const hash = pathToHash(pathArr);
   if (anchor) bodyEl.querySelector('#' + CSS.escape(anchor))?.scrollIntoView();
+  else if (!historyMode && leftAt.has(hash)) contentWrapper.scrollTop = leftAt.get(hash);
   highlightActiveByPath(pathArr);
   rememberRecent(pathArr);
-  const hash = pathToHash(pathArr);
   if (historyMode === 'replace') history.replaceState(null, '', hash);
   else if (historyMode === 'push' && location.hash !== hash) history.pushState(null, '', hash);
 }

@@ -20,6 +20,7 @@ export const resizeHandle   = $('resize-handle');
 export const copyGroup      = $('copy-group');
 export const treeToggleBtn  = $('tree-toggle');
 export const quickBtn       = $('quick-btn');
+export const navGroup       = $('history-nav');
 
 export const MAC = /mac/i.test(navigator.platform);
 

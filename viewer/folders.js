@@ -4,7 +4,7 @@
  */
 import {
   state, bodyEl, fileNameEl, fileMetaEl, modeSwitch, copyContentBtn, sidebar, treeEl, copyGroup, resizeHandle,
-  treeToggleBtn, quickBtn, MAC,
+  treeToggleBtn, quickBtn, navGroup, MAC,
 } from './state.js';
 import { textSpan, menuItem, setupMenu, flash } from './dom.js';
 import { buildTree, findIndex, hashToPath, parseBase } from './core.js';
@@ -249,7 +249,7 @@ async function showRoot(rec) {
 }
 
 function setFolderUi(on) {
-  sidebar.hidden = resizeHandle.hidden = treeToggleBtn.hidden = quickBtn.hidden = !on;
+  sidebar.hidden = resizeHandle.hidden = treeToggleBtn.hidden = quickBtn.hidden = navGroup.hidden = !on;
 }
 
 /* ── Saved folders (IndexedDB) ──────────────────────────────────────────── */

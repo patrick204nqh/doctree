@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- History: **Back** and **Forward** buttons beside Open Folder step through the files you opened (greyed when there is nowhere to go; they never leave Doctree for the page the tab came from). Back and Forward also return to where you had scrolled in the file. Alt + ←/→ and ⌘[ / ⌘] work as before.
 - Mermaid: `.mmd` and `.mermaid` files are listed in the tree and render as a diagram, with **Raw** for the source.
 - CSV and TSV: files up to 5 MB show as a table (was 1 MB); larger files still show as text.
 - CSV and TSV: a bar above the table filters rows by text with a row count. Each header sorts its column: click for ascending, again for descending, again for file order, with an arrow showing the state. Numbers sort by value, text in natural order, empty cells last.

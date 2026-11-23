@@ -95,7 +95,7 @@ Dotfiles, `node_modules` and folders with no supported file are hidden from the 
 
 ## Using Doctree
 
-**Tree and links.** Click a folder's name to open its entry file and expand it, or its chevron to expand only. The two buttons beside the folder name collapse every folder and jump back to the open file. Links between files work with Back and Forward. A link to a folder (`flows/`) opens that folder's entry file, and `other.md#section` scrolls to the heading. The address bar `#path` is a deep link to the open file.
+**Tree and links.** Click a folder's name to open its entry file and expand it, or its chevron to expand only. The two buttons beside the folder name collapse every folder and jump back to the open file. Every file you open is a history step: the ‹ › buttons beside Open Folder (also Alt + ←/→, or ⌘[ / ⌘]) go Back and Forward, and Back returns to where you were scrolled in that file. A link to a folder (`flows/`) opens that folder's entry file, and `other.md#section` scrolls to the heading. The address bar `#path` is a deep link to the open file.
 
 **Breadcrumb.** The toolbar shows the open file's path. Hover a folder (or focus it and press the down arrow) to list what it holds: the entry file, then subfolders, then files. Hover a subfolder (or press the right arrow) to open its list beside it; the left arrow goes back. Pick a file to open it, or a subfolder to open its first file.
 
@@ -128,6 +128,7 @@ Rendered Markdown is sanitized with DOMPurify and Mermaid runs in strict mode. S
 | `folders.js` | Pick, remember and switch folders (IndexedDB); copy path |
 | `tree.js` | Sidebar tree, filter, resize, rescan |
 | `crumbs.js` | Breadcrumb and its folder lists |
+| `nav.js` | Back and Forward buttons |
 | `palette.js` | Quick open and recent files |
 | `outline.js` | Outline panel |
 | `reader.js` | Navigation, Markdown, code and HTML rendering, reload on change |
