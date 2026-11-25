@@ -24,6 +24,8 @@ Doctree opens a folder on your computer and shows a file tree on the left and th
 
 Opening a .md file directly in Chrome also renders it. This needs "Allow access to file URLs" on the extension card.
 
+Source code, issues and changelog: https://github.com/patrick204nqh/doctree
+
 ## Permission justifications
 
 | Permission | Justification |
