@@ -15,7 +15,9 @@ Doctree lets you browse a local folder and read its files in a browser tab.
 Doctree opens a folder on your computer and shows a file tree on the left and the file on the right. It is read-only: it never edits, uploads or deletes anything.
 
 - Markdown with GitHub-style tables, task lists, Mermaid diagrams, relative images and links between files
-- HTML files in a sandboxed frame, JSON as a foldable tree, CSV as a table, source files with syntax highlighting
+- HTML files in a sandboxed frame, JSON as a foldable tree, Mermaid .mmd files as diagrams, source files with syntax highlighting
+- CSV and TSV as a table: filter, sort, pages, row selection, copy, and bar, line and donut charts with PNG export
+- Back and Forward buttons step through the files you opened
 - Quick open (Cmd/Ctrl K), breadcrumb folder lists, outline panel, Preview | Raw switch, copy path
 - Light and dark theme, keyboard first
 - No account, no tracking; contacts a site only for links to trusted sites you list (hover cards, video thumbnails)
